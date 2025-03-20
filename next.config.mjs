@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: [],
+    domains: ['b6redqy7nyu5zctg.public.blob.vercel-storage.com'],
   },
 };
 
