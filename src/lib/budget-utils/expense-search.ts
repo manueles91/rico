@@ -84,13 +84,13 @@ export async function searchExpenses(
   // Add amount filters
   if (minAmount !== undefined) {
     whereConditions.push(`e.amount >= $${paramIndex}`);
-    params.push(minAmount);
+    params.push(minAmount.toString());
     paramIndex++;
   }
   
   if (maxAmount !== undefined) {
     whereConditions.push(`e.amount <= $${paramIndex}`);
-    params.push(maxAmount);
+    params.push(maxAmount.toString());
     paramIndex++;
   }
   
@@ -108,7 +108,7 @@ export async function searchExpenses(
       JOIN expense_categories ec ON e.id = ec.expense_id
       JOIN categories c ON ec.category_id = c.id AND c.name = ANY($${paramIndex})
     `;
-    params.push(categories);
+    params.push(`{${categories.join(',')}}`);
     paramIndex++;
   }
   
@@ -196,6 +196,6 @@ export async function getTopExpenses(
      GROUP BY e.id
      ORDER BY e.amount DESC
      LIMIT $${paramIndex}`,
-    [...params, limit]
+    [...params, limit.toString()]
   );
 }
