@@ -1,4 +1,4 @@
-Development Plan
+Development Plan (old)
 
 Phase 2: LLM Integration (2 weeks)
 Multimodal Chat Interface
