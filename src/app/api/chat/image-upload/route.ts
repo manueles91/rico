@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { put } from '@vercel/blob';
 import { v4 as uuidv4 } from 'uuid';
-import { existsSync } from 'fs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,32 +35,23 @@ export async function POST(request: NextRequest) {
     const fileExtension = file.name.split('.').pop();
     const fileName = `${uniqueId}.${fileExtension}`;
     
-    // Create the uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads');
-    
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-    
     try {
-      // Convert the file to a Buffer
+      // Upload file to Vercel Blob Storage
+      const { url } = await put(fileName, file, {
+        access: 'public',
+      });
+      
+      // Convert the file to a Buffer for base64 encoding
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
-      // Save the file to the uploads directory
-      const filePath = join(uploadsDir, fileName);
-      await writeFile(filePath, buffer);
       
       // Create a base64 representation of the image
       const base64Image = buffer.toString('base64');
       const mimeType = file.type;
       const dataUrl = `data:${mimeType};base64,${base64Image}`;
       
-      // Return both the URL path and the base64 data
-      const fileUrl = `/uploads/${fileName}`;
-      
       return NextResponse.json({ 
-        url: fileUrl,
+        url: url, // Use the URL returned by Vercel Blob Storage
         base64Data: dataUrl
       });
     } catch (error) {
