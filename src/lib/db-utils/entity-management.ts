@@ -36,7 +36,7 @@ export async function addEntityWithRelations<T>(
     `;
     
     // Insert the main entity
-    const result = await client.queryOne<T>(insertQuery, values);
+    const result = await client.queryOne(insertQuery, values);
     
     if (!result) {
       throw new Error(`Failed to insert into ${mainTable}`);
@@ -103,7 +103,7 @@ export async function updateEntityWithRelations<T>(
       `;
       
       // Update the main entity
-      const result = await client.queryOne<T>(
+      const result = await client.queryOne(
         updateQuery, 
         [entityId, ...Object.values(updateData)]
       );
@@ -147,7 +147,7 @@ export async function updateEntityWithRelations<T>(
     }
     
     // Return the updated entity
-    return await client.queryOne<T>(
+    return await client.queryOne(
       `SELECT * FROM ${mainTable} WHERE id = $1`,
       [entityId]
     );
@@ -203,7 +203,7 @@ export async function getEntityWithRelations<T>(
     GROUP BY m.id
   `;
   
-  const result = await queryOne<T>(query, [entityId]);
+  const result = await queryOne(query, [entityId]);
   
   if (!result) {
     throw new Error(`Entity with ID ${entityId} not found in ${mainTable}`);
