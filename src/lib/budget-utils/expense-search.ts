@@ -84,13 +84,13 @@ export async function searchExpenses(
   // Add amount filters
   if (minAmount !== undefined) {
     whereConditions.push(`e.amount >= $${paramIndex}`);
-    params.push(minAmount.toString());
+    params.push(String(minAmount));
     paramIndex++;
   }
   
   if (maxAmount !== undefined) {
     whereConditions.push(`e.amount <= $${paramIndex}`);
-    params.push(maxAmount.toString());
+    params.push(String(maxAmount));
     paramIndex++;
   }
   
@@ -134,8 +134,8 @@ export async function searchExpenses(
     baseQuery,
     null,
     params,
-    page,
-    limit
+    Number(page),
+    Number(limit)
   );
 }
 
@@ -196,6 +196,6 @@ export async function getTopExpenses(
      GROUP BY e.id
      ORDER BY e.amount DESC
      LIMIT $${paramIndex}`,
-    [...params, limit.toString()]
+    [...params, String(limit)]
   );
 }
