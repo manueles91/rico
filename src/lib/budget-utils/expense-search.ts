@@ -82,6 +82,7 @@ export async function searchExpenses(
   }
   
   // Add amount filters
+  // Ensure numeric values are converted to strings for SQL parameters
   if (minAmount !== undefined) {
     whereConditions.push(`e.amount >= $${paramIndex}`);
     params.push(String(minAmount));
@@ -199,3 +200,5 @@ export async function getTopExpenses(
     [...params, String(limit)]
   );
 }
+
+// Force a new deployment
