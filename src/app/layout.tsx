@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
+import { StackProvider, StackTheme } from "@stackframe/stack";
+import { stackServerApp } from "../stack";
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Modern Web Template',
-  description: 'A modern web application template with Next.js, TypeScript, and Tailwind CSS',
+  title: 'OpenAI Chat',
+  description: 'Chat with OpenAI Responses API',
 };
 
 export default function RootLayout({
@@ -17,9 +20,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <main className="min-h-screen">
-          {children}
-        </main>
+        <StackProvider app={stackServerApp}>
+          <StackTheme>
+            {children}
+            <Toaster />
+          </StackTheme>
+        </StackProvider>
       </body>
     </html>
   );

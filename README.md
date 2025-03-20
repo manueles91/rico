@@ -8,7 +8,7 @@ A modern web application template built with Next.js, TypeScript, Tailwind CSS, 
 - **TypeScript**: Type-safe code
 - **Tailwind CSS**: Utility-first CSS framework
 - **shadcn/ui**: High-quality UI components
-- **Supabase Integration**: Database and authentication
+- **Neon Database Integration**: Serverless Postgres database
 - **OpenAI Integration**: AI capabilities
 
 ## Getting Started
@@ -38,9 +38,8 @@ npm install
 Create a `.env` file in the root directory with the following variables:
 
 ```
-# Supabase credentials
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Neon database connection
+NEON_DATABASE_URL=postgres://your-username:your-password@your-endpoint/your-database
 
 # OpenAI API key
 NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key
