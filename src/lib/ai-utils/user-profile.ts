@@ -20,9 +20,9 @@ export interface UserProfile {
 /**
  * Get a simplified user profile with account information
  * @param userId The ID of the user
- * @returns User profile with accounts and roles
+ * @returns User profile with accounts and roles, or null if user not found
  */
-export async function getUserProfile(userId: string): Promise<UserProfile> {
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
   return await queryOne<UserProfile>(
     `SELECT 
        u.*,
@@ -45,7 +45,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 /**
  * Get user preferences for AI personalization
  * @param userId The ID of the user
- * @returns User preferences for AI interactions
+ * @returns User preferences for AI interactions, or null if preferences not found
  */
 export async function getUserPreferences(
   userId: string
@@ -55,7 +55,7 @@ export async function getUserPreferences(
   ai_detail_level: string;
   preferred_categories: string[];
   notification_preferences: Record<string, boolean>;
-}> {
+} | null> {
   return await queryOne(
     `SELECT 
        up.*,
