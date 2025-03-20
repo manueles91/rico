@@ -120,7 +120,7 @@ export async function searchExpensesByNaturalLanguage(
   let categories: string[] = [];
   
   // Extract dates
-  const dateMatches = queryText.matchAll(dateRegex);
+  const dateMatches = Array.from(queryText.matchAll(dateRegex));
   for (const match of dateMatches) {
     const dateStr = match[1];
     // Parse the date (simplified for example)
@@ -135,7 +135,7 @@ export async function searchExpensesByNaturalLanguage(
   }
   
   // Extract amounts
-  const amountMatches = queryText.matchAll(amountRegex);
+  const amountMatches = Array.from(queryText.matchAll(amountRegex));
   for (const match of amountMatches) {
     const amountStr = match[0];
     const amount = parseFloat(match[1]);
@@ -152,14 +152,14 @@ export async function searchExpensesByNaturalLanguage(
   }
   
   // Extract categories
-  const categoryMatches = queryText.matchAll(categoryRegex);
+  const categoryMatches = Array.from(queryText.matchAll(categoryRegex));
   for (const match of categoryMatches) {
     categories.push(match[2].trim());
   }
   
   // Build the query
   let whereConditions = ['e.account_id = $1'];
-  let params = [accountId];
+  let params: (string | number | string[])[] = [accountId];
   let paramIndex = 2;
   
   // Add date filters
@@ -178,13 +178,13 @@ export async function searchExpensesByNaturalLanguage(
   // Add amount filters
   if (minAmount !== undefined) {
     whereConditions.push(`e.amount >= $${paramIndex}`);
-    params.push(minAmount);
+    params.push(minAmount.toString());
     paramIndex++;
   }
   
   if (maxAmount !== undefined) {
     whereConditions.push(`e.amount <= $${paramIndex}`);
-    params.push(maxAmount);
+    params.push(maxAmount.toString());
     paramIndex++;
   }
   
@@ -195,7 +195,7 @@ export async function searchExpensesByNaturalLanguage(
       JOIN expense_categories ec ON e.id = ec.expense_id
       JOIN categories c ON ec.category_id = c.id AND c.name = ANY($${paramIndex})
     `;
-    params.push(categories);
+    params.push(categories.join(','));
     paramIndex++;
   }
   
