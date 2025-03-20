@@ -20,8 +20,11 @@ export async function ensurePersonalAccount(userId: string, userName: string): P
     );
     
     if (existingAccount) {
+      console.log('Found existing personal account:', existingAccount.id);
       return accountSchema.parse(existingAccount);
     }
+    
+    console.log('No personal account found, creating new one for user:', userId);
     
     // Create a new personal account for the user
     const result = await transaction(async (client) => {

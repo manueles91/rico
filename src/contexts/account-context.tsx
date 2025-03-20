@@ -76,48 +76,88 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         // If no accounts were returned, we might need to create a personal account
         if (stackUser) {
           toast({
-            title: 'Creating personal account',
-            description: 'No accounts found. Creating a personal account for you.',
+            title: 'Checking for accounts',
+            description: 'Checking if you already have an account...',
           });
           
-          // Create a personal account for the user
+          // First check if the user already has a personal account
           try {
-            const createResponse = await fetch('/api/accounts', {
-              method: 'POST',
+            const checkResponse = await fetch(`/api/accounts/check?userId=${user.id}`, {
               headers: {
-                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
               },
-              body: JSON.stringify({
-                name: `${user.name || 'Personal'}'s Account`,
-                description: 'Your personal account',
-                isPersonal: true,
-              }),
             });
             
-            if (!createResponse.ok) {
-              const createErrorData = await createResponse.json();
-              console.error('Error creating personal account:', createErrorData);
-              throw new Error(createErrorData.message || 'Failed to create personal account');
+            if (checkResponse.ok) {
+              const checkData = await checkResponse.json();
+              
+              if (checkData.success && checkData.data && checkData.data.length > 0) {
+                // User has an existing account, use it
+                console.log('Found existing accounts:', checkData.data);
+                setAccounts(checkData.data);
+                setCurrentAccount(checkData.data[0]);
+                Cookies.set('currentAccountId', checkData.data[0].id, { expires: 30 });
+                
+                toast({
+                  title: 'Account found',
+                  description: 'Using your existing account.',
+                });
+                return;
+              }
             }
             
-            const createData = await createResponse.json();
-            console.log('Personal account created:', createData);
+            // If no existing account found, create a new personal account
+            toast({
+              title: 'Creating personal account',
+              description: 'No accounts found. Creating a personal account for you.',
+            });
             
-            if (createData.success && createData.data) {
-              setAccounts([createData.data]);
-              setCurrentAccount(createData.data);
-              Cookies.set('currentAccountId', createData.data.id, { expires: 30 });
+            // Create a personal account for the user
+            try {
+              const createResponse = await fetch('/api/accounts', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  name: `${user.name || 'Personal'}'s Account`,
+                  description: 'Your personal account',
+                  isPersonal: true,
+                }),
+              });
               
+              if (!createResponse.ok) {
+                const createErrorData = await createResponse.json();
+                console.error('Error creating personal account:', createErrorData);
+                throw new Error(createErrorData.message || 'Failed to create personal account');
+              }
+              
+              const createData = await createResponse.json();
+              console.log('Personal account created:', createData);
+              
+              if (createData.success && createData.data) {
+                setAccounts([createData.data]);
+                setCurrentAccount(createData.data);
+                Cookies.set('currentAccountId', createData.data.id, { expires: 30 });
+                
+                toast({
+                  title: 'Personal account created',
+                  description: 'Your personal account has been created successfully.',
+                });
+              }
+            } catch (createError) {
+              console.error('Error creating personal account:', createError);
               toast({
-                title: 'Personal account created',
-                description: 'Your personal account has been created successfully.',
+                title: 'Error',
+                description: `Failed to create personal account: ${(createError as Error).message}`,
+                variant: 'destructive',
               });
             }
-          } catch (createError) {
-            console.error('Error creating personal account:', createError);
+          } catch (checkError) {
+            console.error('Error checking for existing accounts:', checkError);
             toast({
               title: 'Error',
-              description: `Failed to create personal account: ${(createError as Error).message}`,
+              description: `Failed to check for existing accounts: ${(checkError as Error).message}`,
               variant: 'destructive',
             });
           }

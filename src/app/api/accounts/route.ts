@@ -73,6 +73,24 @@ export async function GET(request: NextRequest) {
           
           const user = userResult.rows[0];
           
+          // Check if the user already has a personal account in the system
+          // This can happen if the user was created in a different session
+          const existingAccountCheck = await client.query(
+            `SELECT a.* FROM accounts a
+             JOIN account_members am ON a.id = am.account_id
+             WHERE am.user_id = $1 AND a.is_personal = true
+             LIMIT 1`,
+            [stackUser.id]
+          );
+          
+          if (existingAccountCheck.rows.length > 0) {
+            console.log('Found existing personal account for user:', {
+              accountId: existingAccountCheck.rows[0].id
+            });
+            
+            return { user, account: existingAccountCheck.rows[0] };
+          }
+          
           // Create personal account
           const accountResult = await client.query(
             `INSERT INTO accounts (name, description, is_personal)
@@ -152,9 +170,86 @@ export async function GET(request: NextRequest) {
       );
       
       if (!accounts || accounts.length === 0) {
-        console.log('No accounts found for user, creating personal account...');
+        console.log('No accounts found for user, checking if user has a personal account in the system...');
         
         try {
+          // First check if the user already has a personal account in the system
+          // This handles the case where a user signs in from a different device
+          const existingPersonalAccount = await queryOne<Account>(
+            `SELECT a.* FROM accounts a
+             JOIN account_members am ON a.id = am.account_id
+             WHERE am.user_id = $1 AND a.is_personal = true
+             LIMIT 1`,
+            [stackUser.id]
+          );
+          
+          if (existingPersonalAccount) {
+            console.log('Found existing personal account for user:', {
+              accountId: existingPersonalAccount.id
+            });
+            
+            // Get the user details to include in the response
+            const userDetails = await queryOne(
+              'SELECT email, name FROM users WHERE id = $1',
+              [stackUser.id]
+            );
+            
+            // Return the existing personal account
+            return successResponse([{
+              ...existingPersonalAccount,
+              members: [{
+                user_id: stackUser.id,
+                email: userDetails?.email || stackUser.primaryEmail || '',
+                name: userDetails?.name || stackUser.displayName || null,
+                role: 'owner'
+              }]
+            }]);
+          }
+          
+          // Check for any accounts (not just personal) that might be associated with this user
+          // This is a more thorough check that looks for any account membership
+          const anyExistingAccount = await queryOne<Account>(
+            `SELECT a.* FROM accounts a
+             JOIN account_members am ON a.id = am.account_id
+             WHERE am.user_id = $1
+             LIMIT 1`,
+            [stackUser.id]
+          );
+          
+          if (anyExistingAccount) {
+            console.log('Found existing account (not personal) for user:', {
+              accountId: anyExistingAccount.id
+            });
+            
+            // Get the user details to include in the response
+            const userDetails = await queryOne(
+              'SELECT email, name FROM users WHERE id = $1',
+              [stackUser.id]
+            );
+            
+            // Get all members of this account
+            const members = await query(
+              `SELECT 
+                 am.user_id,
+                 u.email,
+                 u.name,
+                 am.role
+               FROM account_members am
+               JOIN users u ON am.user_id = u.id
+               WHERE am.account_id = $1`,
+              [anyExistingAccount.id]
+            );
+            
+            // Return the existing account
+            return successResponse([{
+              ...anyExistingAccount,
+              members
+            }]);
+          }
+          
+          // If no personal account exists, create one
+          console.log('No personal account found, creating new personal account...');
+          
           // Create personal account in a transaction
           const result = await transaction(async (client) => {
             // Create personal account
