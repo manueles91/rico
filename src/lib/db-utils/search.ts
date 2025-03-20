@@ -48,12 +48,12 @@ export async function searchEntities<T>(
       if (Array.isArray(value)) {
         if (value.length > 0) {
           whereConditions.push(`${key} = ANY($${paramIndex})`);
-          params.push(value);
+          params.push(value.map(item => typeof item === 'number' ? String(item) : item));
           paramIndex++;
         }
       } else {
         whereConditions.push(`${key} = $${paramIndex}`);
-        params.push(value);
+        params.push(typeof value === 'number' ? String(value) : value);
         paramIndex++;
       }
     }
@@ -96,7 +96,7 @@ export async function searchEntities<T>(
     baseQuery,
     null,
     params,
-    page,
-    limit
+    Number(page),
+    Number(limit)
   );
 }
