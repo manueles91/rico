@@ -110,7 +110,7 @@ export async function getCategorySuggestions(
      GROUP BY c.name
      ORDER BY count DESC
      LIMIT $3`,
-    [accountId, `%${description}%`, limit]
+    [accountId, `%${description}%`, limit.toString()]
   );
   
   return suggestions.map(s => s.name);

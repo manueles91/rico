@@ -229,7 +229,7 @@ export async function getConversationWithContext(
      WHERE m.conversation_id = $1
      ORDER BY m.created_at DESC
      LIMIT $2`,
-    [conversationId, limit]
+    [conversationId, limit.toString()]
   );
   
   // Get account context
@@ -351,6 +351,6 @@ async function getRecentExpenses(accountId: string, limit: number = 5) {
      GROUP BY e.id
      ORDER BY e.date DESC
      LIMIT $2`,
-    [accountId, limit]
+    [accountId, limit.toString()]
   );
 }

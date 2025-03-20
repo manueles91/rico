@@ -97,7 +97,7 @@ export async function GET(request: NextRequest, { params }: Params) {
        GROUP BY m.id, u.name, u.email
        ORDER BY m.created_at DESC
        LIMIT $2 OFFSET $3`,
-      [id, limit, offset]
+      [id, limit.toString(), offset.toString()]
     );
     
     return successResponse({

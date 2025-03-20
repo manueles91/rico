@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       ORDER BY e.date DESC
       LIMIT $${paramIndex}
     `;
-    queryParams.push(limit);
+    queryParams.push(limit.toString());
     
     const expenses = await query<ExpenseWithCategories>(sql, queryParams);
     

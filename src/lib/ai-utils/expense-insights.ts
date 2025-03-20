@@ -84,7 +84,7 @@ export async function getRecentExpenses(
      GROUP BY e.id
      ORDER BY e.date DESC
      LIMIT $2`,
-    [accountId, limit]
+    [accountId, limit.toString()]
   );
 }
 
