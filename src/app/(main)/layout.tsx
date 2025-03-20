@@ -25,10 +25,10 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <main className="min-h-screen bg-background flex flex-col">
-      <header className="border-b py-4">
+      <header className="border-b py-3">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">OpenAI Chat</h1>
-          <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold">Rico</h1>
+          <div className="flex items-center gap-2">
             {!isAccountLoading && <AccountSelector />}
             <UserButton />
           </div>
@@ -44,9 +44,9 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
 function MainLayoutSkeleton() {
   return (
     <main className="min-h-screen bg-background flex flex-col">
-      <header className="border-b py-4">
+      <header className="border-b py-3">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">OpenAI Chat</h1>
+          <h1 className="text-xl font-bold">Rico</h1>
           <div className="w-48 h-10 bg-gray-200 animate-pulse rounded"></div>
         </div>
       </header>

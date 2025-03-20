@@ -63,7 +63,7 @@ export function FileUpload({
   };
 
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn('flex items-center', className)}>
       <input
         type="file"
         ref={fileInputRef}
@@ -74,7 +74,7 @@ export function FileUpload({
       />
       
       {selectedFile && previewUrl ? (
-        <div className="relative h-10 w-10 rounded-md overflow-hidden">
+        <div className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-md overflow-hidden flex-shrink-0">
           <Image
             src={previewUrl}
             alt="Selected image"
@@ -85,8 +85,9 @@ export function FileUpload({
             onClick={handleClear}
             className="absolute top-0 right-0 bg-black/70 p-0.5 rounded-bl-md"
             disabled={isUploading}
+            aria-label="Remove image"
           >
-            <X size={14} className="text-white" />
+            <X size={12} className="text-white" />
           </button>
         </div>
       ) : (
@@ -96,9 +97,10 @@ export function FileUpload({
           size="icon"
           onClick={handleButtonClick}
           disabled={isUploading}
-          className="h-10 w-10"
+          className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+          aria-label="Upload image"
         >
-          <ImageIcon size={18} />
+          <ImageIcon size={16} className="sm:size-[18px]" />
         </Button>
       )}
     </div>

@@ -31,14 +31,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
     >
       <div
         className={cn(
-          'rounded-lg px-4 py-2 max-w-[80%]',
+          'rounded-lg px-3 py-2 max-w-[90%] sm:max-w-[80%]',
           isUser
             ? 'bg-primary text-primary-foreground'
             : 'bg-muted text-muted-foreground'
         )}
       >
         {message.imageUrl && (
-          <div className="mb-2 relative w-full h-48 rounded-md overflow-hidden">
+          <div className="mb-2 relative w-full h-40 sm:h-48 rounded-md overflow-hidden">
             <Image
               src={message.imageUrl}
               alt="Uploaded image"
@@ -47,7 +47,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             />
           </div>
         )}
-        <div className="prose prose-sm dark:prose-invert max-w-none">
+        <div className="prose prose-sm dark:prose-invert max-w-none break-words">
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             components={{
@@ -65,7 +65,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
                   return <code className="bg-muted-foreground/20 rounded px-1 py-0.5">{children}</code>;
                 }
                 return (
-                  <pre className="bg-muted-foreground/20 rounded p-2 overflow-x-auto mb-2">
+                  <pre className="bg-muted-foreground/20 rounded p-2 overflow-x-auto mb-2 text-xs sm:text-sm">
                     <code className={match ? `language-${match[1]}` : ''} {...props}>
                       {children}
                     </code>

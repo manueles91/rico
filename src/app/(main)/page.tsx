@@ -13,8 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
   return (
-    <div className="container mx-auto max-w-4xl py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6">Chat with OpenAI Vision API</h1>
+    <div className="container mx-auto max-w-4xl py-4 px-3 sm:py-6 sm:px-4">
       <Suspense fallback={<ChatSkeleton />}>
         <ChatContent />
       </Suspense>
@@ -241,11 +240,11 @@ function ChatContent() {
   
   return (
     <>
-      <Card className="p-4 mb-4 h-[60vh] overflow-y-auto">
+      <Card className="p-2 sm:p-4 mb-3 h-[60vh] sm:h-[65vh] overflow-y-auto">
         <ChatMessageList messages={messages} />
       </Card>
       
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex gap-1 sm:gap-2">
         <FileUpload 
           onFileSelect={handleFileSelect}
           onClear={handleClearFile}
@@ -255,11 +254,15 @@ function ChatContent() {
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={selectedFile ? "Ask about the image or leave empty..." : "Type your message..."}
+          placeholder={selectedFile ? "Ask about the image..." : "Type your message..."}
           disabled={isLoading}
-          className="flex-1"
+          className="flex-1 text-sm sm:text-base h-9 sm:h-10"
         />
-        <Button type="submit" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          disabled={isLoading}
+          className="h-9 sm:h-10 px-3 sm:px-4"
+        >
           {isLoading ? 'Sending...' : 'Send'}
         </Button>
       </form>
@@ -269,12 +272,12 @@ function ChatContent() {
 
 function ChatSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
-      <Skeleton className="h-[60vh] w-full rounded-lg" />
-      <div className="flex gap-2">
-        <Skeleton className="h-10 w-10" />
-        <Skeleton className="h-10 flex-1" />
-        <Skeleton className="h-10 w-20" />
+    <div className="flex flex-col gap-3 sm:gap-4">
+      <Skeleton className="h-[60vh] sm:h-[65vh] w-full rounded-lg" />
+      <div className="flex gap-1 sm:gap-2">
+        <Skeleton className="h-9 sm:h-10 w-9 sm:w-10" />
+        <Skeleton className="h-9 sm:h-10 flex-1" />
+        <Skeleton className="h-9 sm:h-10 w-16 sm:w-20" />
       </div>
     </div>
   );
