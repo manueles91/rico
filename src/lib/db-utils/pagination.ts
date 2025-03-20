@@ -47,7 +47,7 @@ export async function getPaginatedResults<T>(
   // Generate count query if not provided
   if (!countQuery) {
     // Extract the FROM part and any JOINs and WHERE clauses
-    const fromRegex = /FROM\s+.+?(?=(ORDER BY|GROUP BY|LIMIT|$))/is;
+    const fromRegex = /FROM\s+.+?(?=(ORDER BY|GROUP BY|LIMIT|$))/i;
     const fromMatch = baseQuery.match(fromRegex);
     
     if (fromMatch) {
