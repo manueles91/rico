@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     );
     
     // Add categories if provided
-    if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0) {
+    if (categoryIds && Array.isArray(categoryIds) && categoryIds.length > 0 && newExpense) {
       for (const categoryId of categoryIds) {
         await query(
           'INSERT INTO expense_categories (expense_id, category_id) VALUES ($1, $2)',
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Fetch the expense with categories for the response
-    const expenseWithCategories = await queryOne<ExpenseWithCategories>(
+    const expenseWithCategories = newExpense ? await queryOne<ExpenseWithCategories>(
       `SELECT e.*, array_agg(c.name) as categories
        FROM expenses e
        LEFT JOIN expense_categories ec ON e.id = ec.expense_id
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
        WHERE e.id = $1
        GROUP BY e.id`,
       [newExpense.id]
-    );
+    ) : null;
     
     return createdResponse(expenseWithCategories);
   } catch (error: any) {

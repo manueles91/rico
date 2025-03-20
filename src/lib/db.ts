@@ -38,6 +38,9 @@ function getAnonymousPool(): Pool {
   return anonymousPool;
 }
 
+// Export getAnonymousPool as getPool for backward compatibility
+export const getPool = getAnonymousPool;
+
 // Cache the authenticated client to prevent repeated connections
 async function getAuthenticatedClient(): Promise<Client> {
   const stackUser = await stackServerApp.getUser();
