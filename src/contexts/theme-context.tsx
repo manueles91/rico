@@ -35,17 +35,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Update document class when theme changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const root = window.document.documentElement;
-      
-      // Remove both classes and add the current one
-      root.classList.remove('light', 'dark');
-      root.classList.add(theme);
-      
-      // Save to localStorage
-      localStorage.setItem('theme', theme);
-    }
-  }, [theme]);
+    if (!mounted) return;
+    
+    const root = document.documentElement;
+    
+    // Remove both classes and add the current one
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    
+    // Save to localStorage
+    localStorage.setItem('theme', theme);
+  }, [theme, mounted]);
 
   const toggleTheme = () => {
     setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));

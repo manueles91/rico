@@ -21,7 +21,7 @@ export function AccountSelector({ className }: AccountSelectorProps) {
   const { accounts, currentAccount, isLoading, switchAccount } = useAccount();
 
   if (isLoading) {
-    return <Skeleton className={`h-9 w-[140px] sm:w-[180px] ${className}`} />;
+    return <Skeleton className={`h-9 w-[200px] ${className}`} />;
   }
 
   if (!accounts.length) {
@@ -33,7 +33,7 @@ export function AccountSelector({ className }: AccountSelectorProps) {
       value={currentAccount?.id}
       onValueChange={switchAccount}
     >
-      <SelectTrigger className={`w-[140px] sm:w-[180px] h-9 sm:h-10 text-sm sm:text-base ${className}`}>
+      <SelectTrigger className={`w-full max-w-[300px] h-9 text-sm ${className}`}>
         <SelectValue placeholder="Select account" />
       </SelectTrigger>
       <SelectContent>

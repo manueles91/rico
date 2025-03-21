@@ -10,15 +10,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AccountSelector } from "@/components/account/account-selector";
 import { useAccount } from "@/contexts/account-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@stackframe/stack";
-import { LogOut, User, Settings, CreditCard } from "lucide-react";
+import { LogOut, User, Settings, CreditCard, Sun, Moon } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "@/contexts/theme-context";
 
 export function UserDropdown() {
   const { currentAccount } = useAccount();
+  const { theme, toggleTheme } = useTheme();
   let stackUser = null;
   
   try {
@@ -55,13 +56,6 @@ export function UserDropdown() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {/* Account Selector */}
-        <DropdownMenuLabel>Account</DropdownMenuLabel>
-        <div className="px-2 py-1.5">
-          <AccountSelector />
-        </div>
-        
-        <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link href="/handler/account" className="cursor-pointer flex w-full items-center">
@@ -82,6 +76,24 @@ export function UserDropdown() {
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        
+        <DropdownMenuSeparator />
+        
+        {/* Theme Toggle */}
+        <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
+          {theme === 'light' ? (
+            <>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>Dark Mode</span>
+            </>
+          ) : (
+            <>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>Light Mode</span>
+            </>
+          )}
+        </DropdownMenuItem>
+        
         <DropdownMenuSeparator />
         <DropdownMenuItem 
           className="cursor-pointer"

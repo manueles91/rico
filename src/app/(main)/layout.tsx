@@ -1,10 +1,8 @@
 'use client';
 
-import { UserButton } from '@/components/auth/user-button';
 import { AccountSelector } from '@/components/account/account-selector';
 import { useAccount } from '@/contexts/account-context';
 import { AccountProvider } from '@/contexts/account-context';
-import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { UserDropdown } from '@/components/layout/user-dropdown';
 import { Suspense } from 'react';
 
@@ -27,16 +25,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <main className="min-h-screen bg-background flex flex-col">
-      <header className="border-b py-3">
+      <header className="border-b py-3 bg-background">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Rico</h1>
+          <h1 className="text-xl font-bold text-foreground">Rico</h1>
+          <div className="flex-1 mx-8">
+            {!isAccountLoading && <AccountSelector />}
+          </div>
           <div className="flex items-center gap-3">
-            <ThemeToggle />
             <UserDropdown />
           </div>
         </div>
       </header>
-      <div className="flex-1">
+      <div className="flex-1 bg-background text-foreground">
         {children}
       </div>
     </main>
@@ -46,16 +46,18 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
 function MainLayoutSkeleton() {
   return (
     <main className="min-h-screen bg-background flex flex-col">
-      <header className="border-b py-3">
+      <header className="border-b py-3 bg-background">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Rico</h1>
+          <h1 className="text-xl font-bold text-foreground">Rico</h1>
+          <div className="flex-1 mx-8">
+            <div className="w-40 h-10 bg-gray-200 animate-pulse rounded"></div>
+          </div>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
             <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
           </div>
         </div>
       </header>
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 bg-background">
         <div className="w-full h-[80vh] bg-gray-100 animate-pulse rounded-lg"></div>
       </div>
     </main>

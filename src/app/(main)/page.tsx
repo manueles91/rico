@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
   return (
-    <div className="container mx-auto max-w-4xl py-4 px-3 sm:py-6 sm:px-4">
+    <div className="container mx-auto max-w-4xl px-3 sm:px-4">
       <Suspense fallback={<ChatSkeleton />}>
         <ChatContent />
       </Suspense>
@@ -273,7 +273,7 @@ function ChatContent() {
 function ChatSkeleton() {
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
-      <Skeleton className="h-[60vh] sm:h-[65vh] w-full rounded-lg" />
+      <Skeleton className="h-[70vh] sm:h-[75vh] w-full rounded-lg" />
       <div className="flex gap-1 sm:gap-2">
         <Skeleton className="h-9 sm:h-10 w-9 sm:w-10" />
         <Skeleton className="h-9 sm:h-10 flex-1" />
