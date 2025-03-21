@@ -5,6 +5,8 @@ import { AccountSettings } from '@/components/account/account-settings';
 import { UserSettings } from '@/components/user/user-settings';
 import { Settings, User } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function SettingsPage() {
   return (
     <div className="container py-6 max-w-4xl">

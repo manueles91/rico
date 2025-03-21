@@ -11,6 +11,8 @@ import { SignIn } from '@stackframe/stack';
 import { toast } from '@/components/ui/use-toast';
 import { UserPlus, AlertCircle } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function JoinPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

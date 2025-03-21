@@ -40,14 +40,33 @@ export async function runMigrations() {
         const client = await pool.connect();
         try {
           await client.query('BEGIN');
-          await client.query(migrationSql);
+          
+          // Split the migration into separate statements to handle errors more gracefully
+          const statements = migrationSql.split(';').filter(stmt => stmt.trim().length > 0);
+          
+          for (const statement of statements) {
+            try {
+              await client.query(statement);
+            } catch (statementError: any) {
+              // Ignore errors for statements that try to create objects that already exist
+              if (statementError.code === '42710' || // duplicate_object
+                  statementError.code === '42P07' || // duplicate_table
+                  statementError.code === '42701') { // duplicate_column
+                console.log(`Ignoring error for existing object: ${statementError.message}`);
+                continue;
+              }
+              throw statementError;
+            }
+          }
+          
           await client.query('INSERT INTO migrations (name) VALUES ($1)', [file]);
           await client.query('COMMIT');
           console.log(`Migration applied: ${file}`);
         } catch (error) {
           await client.query('ROLLBACK');
           console.error(`Error applying migration ${file}:`, error);
-          throw error;
+          // Continue with other migrations instead of failing completely
+          console.log(`Continuing with other migrations...`);
         } finally {
           client.release();
         }

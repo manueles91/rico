@@ -7,29 +7,52 @@ import path from 'path';
 async function applyRlsDirectly() {
   try {
     // First, create the app schema and app.current_user_id function
-    await query(`
-      -- Create app schema if it doesn't exist
-      CREATE SCHEMA IF NOT EXISTS app;
+    try {
+      await query(`
+        -- Create app schema if it doesn't exist
+        CREATE SCHEMA IF NOT EXISTS app;
+      `);
+    } catch (error) {
+      console.log('Schema app already exists, continuing...');
+    }
 
-      -- Drop the function if it exists
-      DROP FUNCTION IF EXISTS app.get_current_user_id();
-
-      -- Create a new function with UUID return type
-      CREATE OR REPLACE FUNCTION app.get_current_user_id()
-      RETURNS UUID AS $$
-      DECLARE
-        user_id UUID;
-      BEGIN
-        BEGIN
-          user_id := current_setting('app.current_user_id', TRUE)::UUID;
-          RETURN user_id;
-        EXCEPTION
-          WHEN OTHERS THEN
-            RETURN NULL;
-        END;
-      END;
-      $$ LANGUAGE plpgsql;
-    `);
+    try {
+      // Check if function exists first
+      const functionExistsResult = await query(`
+        SELECT EXISTS (
+          SELECT 1 FROM pg_proc p
+          JOIN pg_namespace n ON p.pronamespace = n.oid
+          WHERE n.nspname = 'app' AND p.proname = 'get_current_user_id'
+        ) as exists;
+      `);
+      
+      const functionExists = functionExistsResult[0]?.exists;
+      
+      if (!functionExists) {
+        await query(`
+          -- Create a new function with UUID return type
+          CREATE OR REPLACE FUNCTION app.get_current_user_id()
+          RETURNS UUID AS $$
+          DECLARE
+            user_id UUID;
+          BEGIN
+            BEGIN
+              user_id := current_setting('app.current_user_id', TRUE)::UUID;
+              RETURN user_id;
+            EXCEPTION
+              WHEN OTHERS THEN
+                RETURN NULL;
+            END;
+          END;
+          $$ LANGUAGE plpgsql;
+        `);
+      } else {
+        console.log('Function app.get_current_user_id already exists, skipping creation.');
+      }
+    } catch (error) {
+      console.error('Error with function creation:', error);
+      // Continue execution, don't throw
+    }
     
     // Apply RLS to users table
     await query(`
