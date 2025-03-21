@@ -4,6 +4,7 @@ import { UserButton } from '@/components/auth/user-button';
 import { AccountSelector } from '@/components/account/account-selector';
 import { useAccount } from '@/contexts/account-context';
 import { AccountProvider } from '@/contexts/account-context';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Suspense } from 'react';
 
 export default function MainLayout({
@@ -28,7 +29,8 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
       <header className="border-b py-3">
         <div className="container mx-auto px-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">Rico</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
             {!isAccountLoading && <AccountSelector />}
             <UserButton />
           </div>
@@ -47,7 +49,10 @@ function MainLayoutSkeleton() {
       <header className="border-b py-3">
         <div className="container mx-auto px-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">Rico</h1>
-          <div className="w-48 h-10 bg-gray-200 animate-pulse rounded"></div>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
+            <div className="w-40 h-10 bg-gray-200 animate-pulse rounded"></div>
+          </div>
         </div>
       </header>
       <div className="flex-1 p-8">

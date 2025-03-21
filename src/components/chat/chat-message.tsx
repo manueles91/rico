@@ -34,7 +34,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           'rounded-lg px-3 py-2 max-w-[90%] sm:max-w-[80%]',
           isUser
             ? 'bg-primary text-primary-foreground'
-            : 'bg-muted text-muted-foreground'
+            : 'bg-muted dark:bg-secondary text-foreground dark:text-secondary-foreground'
         )}
       >
         {message.imageUrl && (
@@ -62,10 +62,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
               code: ({ node, inline, className, children, ...props }: CodeComponentProps) => {
                 const match = /language-(\w+)/.exec(className || '');
                 if (inline) {
-                  return <code className="bg-muted-foreground/20 rounded px-1 py-0.5">{children}</code>;
+                  return <code className="bg-muted-foreground/20 dark:bg-background/50 rounded px-1 py-0.5">{children}</code>;
                 }
                 return (
-                  <pre className="bg-muted-foreground/20 rounded p-2 overflow-x-auto mb-2 text-xs sm:text-sm">
+                  <pre className="bg-muted-foreground/20 dark:bg-background/50 rounded p-2 overflow-x-auto mb-2 text-xs sm:text-sm">
                     <code className={match ? `language-${match[1]}` : ''} {...props}>
                       {children}
                     </code>
