@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { CameraCapture } from '@/components/chat/camera-capture';
 import { toast } from '@/components/ui/use-toast';
 import { useAccount } from '@/contexts/account-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Send } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -32,6 +33,7 @@ function ChatContent() {
     },
   ]);
   const [input, setInput] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -247,6 +249,21 @@ function ChatContent() {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const form = e.currentTarget.form;
+      if (form) {
+        const formEvent = new Event('submit', { cancelable: true, bubbles: true });
+        form.dispatchEvent(formEvent);
+      }
+    }
+  };
+
   if (isAccountLoading) {
     return <ChatSkeleton />;
   }
@@ -268,60 +285,76 @@ function ChatContent() {
         <ChatMessageList messages={messages} />
       </div>
       
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:gap-3">
-        <div className="flex gap-2 sm:gap-3">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={selectedFile ? "Ask about the image..." : "Type your message..."}
-            disabled={isLoading}
-            className="flex-1 min-h-[5.5rem] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          />
-          <div className="flex flex-col gap-2 w-[30%] sm:w-[25%] md:w-[20%]">
-            <div className="flex justify-between w-full">
+      <div className="p-4 border-t">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder={selectedFile ? "Ask about the image..." : "Type your message..."}
+              disabled={isLoading}
+              className="w-full h-12 pl-4 pr-24 py-3 bg-background rounded-lg border border-input resize-none"
+            />
+            <div className="absolute right-1 top-1 flex gap-1">
               <FileUpload 
                 onFileSelect={handleFileSelect}
                 onClear={handleClearFile}
                 selectedFile={selectedFile}
                 isUploading={isUploading}
-                className="flex-1 mr-2"
+                className="w-24"
               />
               <CameraCapture
-                onPhotoCapture={handleFileSelect}
+                onCapture={(file: File) => handleFileSelect(file)}
                 onClear={handleClearFile}
-                capturedPhoto={selectedFile}
-                isCapturing={isUploading}
-                className="flex-1"
+                capturedImage={selectedFile}
+                isUploading={isUploading}
+                className="w-24"
               />
+              <Button 
+                type="submit" 
+                disabled={isLoading || (!input.trim() && !selectedFile)}
+                className="w-24 h-11"
+              >
+                {isLoading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <>
+                    <Send size={16} className="mr-2" />
+                    <span>Send</span>
+                  </>
+                )}
+              </Button>
             </div>
-            <Button 
-              type="submit" 
-              disabled={isLoading}
-              className="h-11 sm:h-12 px-4 sm:px-5 w-full"
-            >
-              {isLoading ? 'Sending...' : 'Send'}
-            </Button>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </>
   );
 }
 
 function ChatSkeleton() {
   return (
-    <div className="flex flex-col gap-3 sm:gap-4">
-      <Skeleton className="h-[65vh] sm:h-[70vh] w-full rounded-lg" />
-      <div className="flex gap-2 sm:gap-3">
-        <Skeleton className="h-[5.5rem] flex-1" />
-        <div className="flex flex-col gap-2 w-[30%] sm:w-[25%] md:w-[20%]">
-          <div className="flex justify-between w-full">
-            <Skeleton className="h-11 sm:h-12 w-[48%]" />
-            <Skeleton className="h-11 sm:h-12 w-[48%]" />
+    <>
+      <div className="flex-1 overflow-y-auto p-4">
+        <Skeleton className="h-16 w-3/4 mb-4" />
+        <Skeleton className="h-16 w-2/3 mb-4" />
+        <Skeleton className="h-16 w-3/4 mb-4" />
+      </div>
+      
+      <div className="p-4 border-t">
+        <div className="flex flex-col gap-2">
+          <div className="relative">
+            <Skeleton className="w-full h-12 rounded-lg" />
+            <div className="absolute right-1 top-1 flex gap-1">
+              <Skeleton className="w-24 h-11 rounded-lg" />
+              <Skeleton className="w-24 h-11 rounded-lg" />
+              <Skeleton className="w-24 h-11 rounded-lg" />
+            </div>
           </div>
-          <Skeleton className="h-11 sm:h-12 w-full" />
         </div>
       </div>
-    </div>
+    </>
   );
 }

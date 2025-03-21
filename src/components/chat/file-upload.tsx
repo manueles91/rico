@@ -57,7 +57,7 @@ export function FileUpload({
   };
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('w-full', className)}>
       <input
         type="file"
         ref={fileInputRef}
@@ -68,7 +68,7 @@ export function FileUpload({
       />
       
       {selectedFile && previewUrl ? (
-        <div className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-md overflow-hidden flex-shrink-0">
+        <div className="relative h-11 w-full rounded-md overflow-hidden">
           <NextImage
             src={previewUrl}
             alt="Selected file"
@@ -88,14 +88,14 @@ export function FileUpload({
         <Button
           type="button"
           variant="outline"
-          size="icon"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
-          className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+          className="w-full h-11"
           aria-label="Upload image"
           title="Upload an image"
         >
-          <Image size={16} className="sm:size-[18px]" />
+          <Image size={16} className="mr-2" />
+          <span>Image</span>
         </Button>
       )}
     </div>

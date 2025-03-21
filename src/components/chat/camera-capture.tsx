@@ -1,84 +1,138 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Camera, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NextImage from 'next/image';
 
 interface CameraCaptureProps {
-  onPhotoCapture: (file: File) => void;
+  onCapture: (file: File) => void;
   onClear: () => void;
-  capturedPhoto: File | null;
-  isCapturing: boolean;
+  capturedImage: File | null;
+  isUploading: boolean;
   className?: string;
 }
 
 export function CameraCapture({
-  onPhotoCapture,
+  onCapture,
   onClear,
-  capturedPhoto,
-  isCapturing,
+  capturedImage,
+  isUploading,
   className,
 }: CameraCaptureProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  // Check if device is mobile
-  useEffect(() => {
-    const userAgent = navigator.userAgent || navigator.vendor;
-    if (/android|iPad|iPhone|iPod/i.test(userAgent)) {
-      setIsMobile(true);
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      
+      streamRef.current = stream;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+        setIsStreaming(true);
+      }
+      
+      setShowCamera(true);
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      alert('Could not access camera. Please check permissions.');
     }
-  }, []);
+  };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check if file is an image
-    if (!file.type.startsWith('image/')) {
-      alert('Please capture an image');
-      return;
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
-
-    // Check file size (max 20MB as per OpenAI requirements)
-    if (file.size > 20 * 1024 * 1024) {
-      alert('File size must be less than 20MB');
-      return;
-    }
-
-    onPhotoCapture(file);
     
-    // Create preview URL
-    setPreviewUrl(URL.createObjectURL(file));
+    setIsStreaming(false);
+    setShowCamera(false);
+  };
+
+  const takePhoto = () => {
+    if (!videoRef.current || !canvasRef.current || !isStreaming) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert to file
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      
+      const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+      onCapture(file);
+      
+      // Create preview URL
+      setPreviewUrl(URL.createObjectURL(blob));
+      
+      // Stop camera
+      stopCamera();
+    }, 'image/jpeg', 0.9);
   };
 
   const handleClear = () => {
     onClear();
     setPreviewUrl(null);
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   return (
-    <div className={cn('relative', className)}>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept="image/*"
-        capture={isMobile ? 'environment' : undefined}
-        className="hidden"
-        disabled={isCapturing}
-      />
+    <div className={cn('w-full', className)}>
+      {/* Hidden canvas for capturing photos */}
+      <canvas ref={canvasRef} className="hidden" />
       
-      {capturedPhoto && previewUrl ? (
-        <div className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-md overflow-hidden flex-shrink-0">
+      {showCamera && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+          <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 p-4 max-w-md mx-auto">
+            <div className="relative bg-card rounded-lg overflow-hidden shadow-lg">
+              <video 
+                ref={videoRef} 
+                className="w-full aspect-[4/3] bg-black"
+                autoPlay 
+                playsInline
+              />
+              
+              <div className="p-4 flex justify-between">
+                <Button 
+                  variant="outline" 
+                  onClick={stopCamera}
+                  disabled={isUploading}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={takePhoto}
+                  disabled={isUploading || !isStreaming}
+                >
+                  Capture
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {capturedImage && previewUrl ? (
+        <div className="relative h-11 w-full rounded-md overflow-hidden">
           <NextImage
             src={previewUrl}
             alt="Captured photo"
@@ -88,7 +142,7 @@ export function CameraCapture({
           <button
             onClick={handleClear}
             className="absolute top-0 right-0 bg-black/70 p-0.5 rounded-bl-md"
-            disabled={isCapturing}
+            disabled={isUploading}
             aria-label="Remove photo"
           >
             <X size={12} className="text-white" />
@@ -98,14 +152,14 @@ export function CameraCapture({
         <Button
           type="button"
           variant="outline"
-          size="icon"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isCapturing}
-          className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+          onClick={startCamera}
+          disabled={isUploading}
+          className="w-full h-11"
           aria-label="Take photo"
           title="Take a photo"
         >
-          <Camera size={16} className="sm:size-[18px]" />
+          <Camera size={16} className="mr-2" />
+          <span>Camera</span>
         </Button>
       )}
     </div>
