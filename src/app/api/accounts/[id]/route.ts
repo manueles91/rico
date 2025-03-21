@@ -10,14 +10,14 @@ import { Account, AccountWithMembers } from '../route';
 
 interface Params {
   params: {
-    id: string;
+    accountId: string;
   };
 }
 
-// GET /api/accounts/[id] - Get a specific account with members
+// GET /api/accounts/[accountId] - Get a specific account with members
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const { id } = params;
+    const { accountId } = params;
     
     const account = await queryOne<AccountWithMembers>(
       `SELECT 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, { params }: Params) {
        JOIN users u ON am.user_id = u.id
        WHERE a.id = $1
        GROUP BY a.id`,
-      [id]
+      [accountId]
     );
     
     if (!account) {
@@ -48,17 +48,17 @@ export async function GET(request: NextRequest, { params }: Params) {
   }
 }
 
-// PUT /api/accounts/[id] - Update an account
+// PUT /api/accounts/[accountId] - Update an account
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
-    const { id } = params;
+    const { accountId } = params;
     const body = await request.json();
     const { name, description, userId } = body;
     
     // Verify account exists
     const existingAccount = await queryOne<Account>(
       'SELECT * FROM accounts WHERE id = $1',
-      [id]
+      [accountId]
     );
     
     if (!existingAccount) {
@@ -69,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     if (userId) {
       const userMembership = await queryOne(
         'SELECT role FROM account_members WHERE account_id = $1 AND user_id = $2',
-        [id, userId]
+        [accountId, userId]
       );
       
       if (!userMembership) {
@@ -89,7 +89,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
            updated_at = NOW()
        WHERE id = $3
        RETURNING *`,
-      [name || existingAccount.name, description, id]
+      [name || existingAccount.name, description, accountId]
     );
     
     return successResponse(updatedAccount);
@@ -98,10 +98,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
   }
 }
 
-// DELETE /api/accounts/[id] - Delete an account
+// DELETE /api/accounts/[accountId] - Delete an account
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const { id } = params;
+    const { accountId } = params;
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     
@@ -112,7 +112,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     // Verify account exists
     const existingAccount = await queryOne<Account>(
       'SELECT * FROM accounts WHERE id = $1',
-      [id]
+      [accountId]
     );
     
     if (!existingAccount) {
@@ -122,7 +122,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     // Verify user has permission to delete the account
     const userMembership = await queryOne(
       'SELECT role FROM account_members WHERE account_id = $1 AND user_id = $2',
-      [id, userId]
+      [accountId, userId]
     );
     
     if (!userMembership) {
@@ -134,9 +134,9 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     }
     
     // Delete the account - cascading delete will remove related records
-    await query('DELETE FROM accounts WHERE id = $1', [id]);
+    await query('DELETE FROM accounts WHERE id = $1', [accountId]);
     
-    return successResponse({ id }, 'Account deleted successfully');
+    return successResponse({ accountId }, 'Account deleted successfully');
   } catch (error: any) {
     return errorResponse(`Error deleting account: ${error.message}`);
   }

@@ -10,7 +10,7 @@ import { NextRequest } from 'next/server';
 
 interface Params {
   params: {
-    id: string;
+    accountId: string;
   };
 }
 
@@ -24,12 +24,12 @@ export interface AccountMember {
 // GET /api/accounts/[id]/members - Get all members of an account
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const { id } = params;
+    const { accountId } = params;
     
     // Verify account exists
     const accountExists = await queryOne(
       'SELECT id FROM accounts WHERE id = $1',
-      [id]
+      [accountId]
     );
     
     if (!accountExists) {
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest, { params }: Params) {
        JOIN users u ON am.user_id = u.id
        WHERE am.account_id = $1
        ORDER BY am.created_at DESC`,
-      [id]
+      [accountId]
     );
     
     return successResponse(members);
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 // POST /api/accounts/[id]/members - Add a member to an account
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    const { id } = params;
+    const { accountId } = params;
     const body = await request.json();
     const { userId, role, requestingUserId } = body;
     
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     // Verify account exists
     const accountExists = await queryOne(
       'SELECT id FROM accounts WHERE id = $1',
-      [id]
+      [accountId]
     );
     
     if (!accountExists) {
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (requestingUserId) {
       const requesterRole = await queryOne(
         'SELECT role FROM account_members WHERE account_id = $1 AND user_id = $2',
-        [id, requestingUserId]
+        [accountId, requestingUserId]
       );
       
       if (!requesterRole) {
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     // Check if user is already a member
     const existingMembership = await queryOne(
       'SELECT * FROM account_members WHERE account_id = $1 AND user_id = $2',
-      [id, userId]
+      [accountId, userId]
     );
     
     if (existingMembership) {
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest, { params }: Params) {
          SET role = $1
          WHERE account_id = $2 AND user_id = $3
          RETURNING *`,
-        [role, id, userId]
+        [role, accountId, userId]
       );
       
       return successResponse(updatedMembership, 'Member role updated');
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       `INSERT INTO account_members (account_id, user_id, role)
        VALUES ($1, $2, $3)
        RETURNING *`,
-      [id, userId, role]
+      [accountId, userId, role]
     );
     
     return createdResponse(newMembership);
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 // DELETE /api/accounts/[id]/members - Remove a member from an account
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const { id } = params;
+    const { accountId } = params;
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     const requestingUserId = searchParams.get('requestingUserId');
@@ -157,7 +157,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     // Verify account exists
     const accountExists = await queryOne(
       'SELECT id FROM accounts WHERE id = $1',
-      [id]
+      [accountId]
     );
     
     if (!accountExists) {
@@ -167,7 +167,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     // Get the member being removed
     const memberToRemove = await queryOne(
       'SELECT * FROM account_members WHERE account_id = $1 AND user_id = $2',
-      [id, userId]
+      [accountId, userId]
     );
     
     if (!memberToRemove) {
@@ -178,7 +178,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (requestingUserId === userId) {
       await query(
         'DELETE FROM account_members WHERE account_id = $1 AND user_id = $2',
-        [id, userId]
+        [accountId, userId]
       );
       
       return successResponse({ userId }, 'You have left the account');
@@ -188,7 +188,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     if (requestingUserId) {
       const requesterRole = await queryOne(
         'SELECT role FROM account_members WHERE account_id = $1 AND user_id = $2',
-        [id, requestingUserId]
+        [accountId, requestingUserId]
       );
       
       if (!requesterRole) {
@@ -203,7 +203,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
       if (memberToRemove.role === 'admin') {
         const adminCount = await queryOne(
           'SELECT COUNT(*) as count FROM account_members WHERE account_id = $1 AND role = $2',
-          [id, 'admin']
+          [accountId, 'admin']
         );
         
         if (adminCount.count <= 1) {
@@ -215,7 +215,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     // Remove the member
     await query(
       'DELETE FROM account_members WHERE account_id = $1 AND user_id = $2',
-      [id, userId]
+      [accountId, userId]
     );
     
     return successResponse({ userId }, 'Member removed successfully');
