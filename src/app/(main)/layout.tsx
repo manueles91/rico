@@ -5,6 +5,7 @@ import { AccountSelector } from '@/components/account/account-selector';
 import { useAccount } from '@/contexts/account-context';
 import { AccountProvider } from '@/contexts/account-context';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { UserDropdown } from '@/components/layout/user-dropdown';
 import { Suspense } from 'react';
 
 export default function MainLayout({
@@ -31,8 +32,7 @@ function MainLayoutContent({ children }: { children: React.ReactNode }) {
           <h1 className="text-xl font-bold">Rico</h1>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            {!isAccountLoading && <AccountSelector />}
-            <UserButton />
+            <UserDropdown />
           </div>
         </div>
       </header>
@@ -51,7 +51,7 @@ function MainLayoutSkeleton() {
           <h1 className="text-xl font-bold">Rico</h1>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
-            <div className="w-40 h-10 bg-gray-200 animate-pulse rounded"></div>
+            <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
           </div>
         </div>
       </header>
