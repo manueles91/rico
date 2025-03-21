@@ -344,29 +344,19 @@ export async function POST(request: NextRequest) {
           [account.id, stackUser.id, 'owner']
         );
         
-        // Process invitations for shared accounts
-        if (!body.isPersonal && body.invitedEmails && Array.isArray(body.invitedEmails) && body.invitedEmails.length > 0) {
-          // Generate a random token for each invitation
-          for (const email of body.invitedEmails) {
-            const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-            
-            // Create invitation record
-            await client.query(
-              `INSERT INTO invitations (account_id, email, role, token, invited_by, expires_at)
-               VALUES ($1, $2, $3, $4, $5, $6)`,
-              [
-                account.id, 
-                email, 
-                'editor', // Default role for invited members
-                token,
-                stackUser.id,
-                new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Expires in 7 days
-              ]
-            );
-            
-            // TODO: Send invitation email
-            console.log(`Invitation created for ${email} to join account ${account.id}`);
-          }
+        // Generate a shareable link for shared accounts if requested
+        if (body.generateShareableLink && !account.is_personal) {
+          const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+          const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Expires in 30 days
+          
+          await client.query(
+            `INSERT INTO shareable_links (account_id, token, created_by, expires_at)
+             VALUES ($1, $2, $3, $4)`,
+            [account.id, token, stackUser.id, expiresAt]
+          );
+          
+          // Add the token to the account object for the response
+          account.shareToken = token;
         }
         
         return account;

@@ -154,12 +154,11 @@ export function CameraCapture({
           variant="outline"
           onClick={startCamera}
           disabled={isUploading}
-          className="w-full h-11"
+          className="w-full h-11 p-0"
           aria-label="Take photo"
           title="Take a photo"
         >
-          <Camera size={16} className="mr-2" />
-          <span>Camera</span>
+          <Camera size={18} />
         </Button>
       )}
     </div>

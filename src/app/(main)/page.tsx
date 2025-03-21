@@ -286,47 +286,61 @@ function ChatContent() {
       </div>
       
       <div className="p-4 border-t">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <div className="relative">
+        <form
+          onSubmit={handleSubmit}
+          className="flex gap-2"
+        >
+          {/* Text input area */}
+          <div className="relative flex-1">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder={selectedFile ? "Ask about the image..." : "Type your message..."}
+              placeholder="Type your message..."
+              className="w-full h-24 px-4 py-3 bg-background rounded-lg border border-input resize-none"
               disabled={isLoading}
-              className="w-full h-12 pl-4 pr-24 py-3 bg-background rounded-lg border border-input resize-none"
+              maxLength={1000}
             />
-            <div className="absolute right-1 top-1 flex gap-1">
-              <FileUpload 
-                onFileSelect={handleFileSelect}
-                onClear={handleClearFile}
-                selectedFile={selectedFile}
-                isUploading={isUploading}
-                className="w-24"
-              />
-              <CameraCapture
-                onCapture={(file: File) => handleFileSelect(file)}
-                onClear={handleClearFile}
-                capturedImage={selectedFile}
-                isUploading={isUploading}
-                className="w-24"
-              />
-              <Button 
-                type="submit" 
-                disabled={isLoading || (!input.trim() && !selectedFile)}
-                className="w-24 h-11"
-              >
-                {isLoading ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  <>
-                    <Send size={16} className="mr-2" />
-                    <span>Send</span>
-                  </>
-                )}
-              </Button>
+            <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
+              {input.length}/1000
             </div>
+          </div>
+          
+          {/* Media buttons stacked vertically */}
+          <div className="flex flex-col gap-2 w-12 sm:w-14">
+            <FileUpload
+              onFileSelect={handleFileSelect}
+              onClear={handleClearFile}
+              selectedFile={selectedFile}
+              isUploading={isUploading}
+              className="w-full"
+            />
+            <CameraCapture
+              onCapture={(file: File) => handleFileSelect(file)}
+              onClear={handleClearFile}
+              capturedImage={selectedFile}
+              isUploading={isUploading}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Send button */}
+          <div className="flex items-end">
+            <Button 
+              type="submit" 
+              disabled={isLoading || (!input.trim() && !selectedFile)}
+              className="w-20 sm:w-24 h-12 bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              {isLoading ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <>
+                  <Send size={16} className="mr-2" />
+                  <span className="hidden sm:inline">Send</span>
+                </>
+              )}
+            </Button>
           </div>
         </form>
       </div>
@@ -344,14 +358,19 @@ function ChatSkeleton() {
       </div>
       
       <div className="p-4 border-t">
-        <div className="flex flex-col gap-2">
-          <div className="relative">
-            <Skeleton className="w-full h-12 rounded-lg" />
-            <div className="absolute right-1 top-1 flex gap-1">
-              <Skeleton className="w-24 h-11 rounded-lg" />
-              <Skeleton className="w-24 h-11 rounded-lg" />
-              <Skeleton className="w-24 h-11 rounded-lg" />
-            </div>
+        <div className="flex gap-2">
+          {/* Text input skeleton */}
+          <Skeleton className="flex-1 h-24 rounded-lg" />
+          
+          {/* Media buttons skeleton */}
+          <div className="flex flex-col gap-2 w-12">
+            <Skeleton className="w-full h-11 rounded-lg" />
+            <Skeleton className="w-full h-11 rounded-lg" />
+          </div>
+          
+          {/* Send button skeleton */}
+          <div className="flex items-end">
+            <Skeleton className="w-24 h-12 rounded-lg" />
           </div>
         </div>
       </div>

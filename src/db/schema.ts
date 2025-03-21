@@ -23,8 +23,11 @@ export const accountSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   is_personal: z.boolean(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime()
+  created_by: z.string().uuid(),
+  created_at: z.date(),
+  updated_at: z.date().nullable(),
+  is_deleted: z.boolean().default(false),
+  deleted_at: z.date().nullable(),
 });
 
 export type Account = z.infer<typeof accountSchema>;
@@ -137,3 +140,16 @@ export const invitationSchema = z.object({
 });
 
 export type Invitation = z.infer<typeof invitationSchema>;
+
+// ShareableLink schema
+export const ShareableLinkSchema = z.object({
+  id: z.string().uuid(),
+  account_id: z.string().uuid(),
+  token: z.string(),
+  created_by: z.string().uuid(),
+  expires_at: z.date(),
+  created_at: z.date(),
+  updated_at: z.date().nullable(),
+});
+
+export type ShareableLink = z.infer<typeof ShareableLinkSchema>;

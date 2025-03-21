@@ -15,6 +15,8 @@ interface AccountContextType {
   switchAccount: (accountId: string) => void;
   refreshAccounts: () => Promise<void>;
   createAccount: (name: string, description: string, isPersonal?: boolean, invitedEmails?: string[]) => Promise<Account | null>;
+  generateShareableLink: (accountId: string) => Promise<string | null>;
+  deleteAccount: (accountId: string) => Promise<boolean>;
 }
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
@@ -190,7 +192,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
           name,
           description,
           isPersonal,
-          invitedEmails,
+          generateShareableLink: !isPersonal,
         }),
       });
       
@@ -211,9 +213,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
           title: 'Account created',
           description: isPersonal 
             ? 'Your new personal account has been created successfully.'
-            : invitedEmails.length > 0
-              ? `Your shared account has been created and invitations sent to ${invitedEmails.length} email(s).`
-              : 'Your shared account has been created successfully.',
+            : 'Your shared account has been created successfully. You can now share the invitation link with others.',
         });
         
         return data.data;
@@ -230,6 +230,93 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     }
     
     return null;
+  };
+
+  // Function to generate a shareable link for an account
+  const generateShareableLink = async (accountId: string) => {
+    try {
+      const response = await fetch(`/api/accounts/${accountId}/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error generating shareable link:', errorData);
+        throw new Error(errorData.message || 'Failed to generate shareable link');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.data?.shareLink) {
+        return data.data.shareLink;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      console.error('Error generating shareable link:', err);
+      
+      toast({
+        title: 'Error',
+        description: `Failed to generate shareable link: ${(err as Error).message}`,
+        variant: 'destructive',
+      });
+    }
+    
+    return null;
+  };
+
+  // Function to delete an account (remove user's access)
+  const deleteAccount = async (accountId: string) => {
+    try {
+      const response = await fetch(`/api/accounts/${accountId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error deleting account:', errorData);
+        throw new Error(errorData.message || 'Failed to delete account');
+      }
+      
+      // Remove the account from the local state
+      setAccounts(accounts.filter(account => account.id !== accountId));
+      
+      // If the deleted account is the current account, switch to another account
+      if (currentAccount?.id === accountId) {
+        const remainingAccount = accounts.find(account => account.id !== accountId);
+        
+        if (remainingAccount) {
+          setCurrentAccount(remainingAccount);
+          Cookies.set('currentAccountId', remainingAccount.id, { expires: 30 });
+        } else {
+          setCurrentAccount(null);
+          Cookies.remove('currentAccountId');
+        }
+      }
+      
+      toast({
+        title: 'Account deleted',
+        description: 'The account has been removed from your account list.',
+      });
+      
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      console.error('Error deleting account:', err);
+      
+      toast({
+        title: 'Error',
+        description: `Failed to delete account: ${(err as Error).message}`,
+        variant: 'destructive',
+      });
+      
+      return false;
+    }
   };
 
   // Fetch user accounts when the user is loaded
@@ -262,6 +349,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         switchAccount,
         refreshAccounts: fetchAccounts,
         createAccount,
+        generateShareableLink,
+        deleteAccount,
       }}
     >
       {children}
