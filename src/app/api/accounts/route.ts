@@ -95,13 +95,14 @@ export async function GET(request: NextRequest) {
           
           // Create personal account
           const accountResult = await client.query(
-            `INSERT INTO accounts (name, description, is_personal)
-             VALUES ($1, $2, $3)
+            `INSERT INTO accounts (name, description, is_personal, created_by)
+             VALUES ($1, $2, $3, $4)
              RETURNING *`,
             [
               `${user.name || 'Personal'}'s Account`,
               'Your personal account',
-              true
+              true,
+              user.id
             ]
           );
           
@@ -256,13 +257,14 @@ export async function GET(request: NextRequest) {
           const result = await transaction(async (client) => {
             // Create personal account
             const accountResult = await client.query(
-              `INSERT INTO accounts (name, description, is_personal)
-               VALUES ($1, $2, $3)
+              `INSERT INTO accounts (name, description, is_personal, created_by)
+               VALUES ($1, $2, $3, $4)
                RETURNING *`,
               [
                 `${stackUser.displayName || 'Personal'}'s Account`,
                 'Your personal account',
-                true
+                true,
+                stackUser.id
               ]
             );
             
@@ -331,10 +333,10 @@ export async function POST(request: NextRequest) {
       const result = await transaction(async (client) => {
         // Create the account
         const accountResult = await client.query(
-          `INSERT INTO accounts (name, description, is_personal)
-           VALUES ($1, $2, $3)
+          `INSERT INTO accounts (name, description, is_personal, created_by)
+           VALUES ($1, $2, $3, $4)
            RETURNING *`,
-          [body.name, body.description || null, body.isPersonal !== false]
+          [body.name, body.description || null, body.isPersonal !== false, stackUser.id]
         );
         
         const account = accountResult.rows[0];

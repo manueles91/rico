@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ChatMessage, MessageRole } from '@/components/chat/types';
 import { ChatMessageList } from '@/components/chat/chat-message-list';
 import { FileUpload } from '@/components/chat/file-upload';
@@ -12,6 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useAccount } from '@/contexts/account-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Send } from 'lucide-react';
+import { ChatVanishInput } from '@/components/ui/chat-vanish-input';
 
 export const dynamic = 'force-dynamic';
 
@@ -290,49 +290,51 @@ function ChatContent() {
       <div className="p-4 border-t">
         <form
           onSubmit={handleSubmit}
-          className="flex gap-2"
+          className="flex flex-col gap-2"
         >
-          {/* Text input area */}
-          <div className="relative flex-1">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your message..."
-              className="w-full h-24 px-4 py-3 bg-background rounded-lg border border-input resize-none"
-              disabled={isLoading}
-              maxLength={1000}
-            />
-            <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
-              {input.length}/1000
-            </div>
-          </div>
-          
-          {/* Media buttons stacked vertically */}
-          <div className="flex flex-col gap-2 w-12 sm:w-14">
+          {/* Media buttons side-by-side */}
+          <div className="flex gap-2">
             <FileUpload
               onFileSelect={handleFileSelect}
               onClear={handleClearFile}
               selectedFile={selectedFile}
               isUploading={isUploading}
-              className="w-full"
+              className="flex-1"
             />
             <CameraCapture
               onCapture={(file: File) => handleFileSelect(file)}
               onClear={handleClearFile}
               capturedImage={selectedFile}
               isUploading={isUploading}
-              className="w-full"
+              className="flex-1"
             />
           </div>
           
-          {/* Send button */}
-          <div className="flex items-end">
+          {/* Text input and send button */}
+          <div className="flex gap-2">
+            {/* Text input area */}
+            <div className="relative flex-1">
+              <ChatVanishInput
+                placeholders={[
+                  "Type your message...",
+                  "Add an expense...",
+                  "Ask me anything...",
+                  "Upload a receipt...",
+                ]}
+                onChange={handleInputChange}
+                onSubmit={handleSubmit}
+                value={input}
+                disabled={isLoading}
+                textareaRef={textareaRef}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
+            
+            {/* Send button */}
             <Button 
               type="submit" 
               disabled={isLoading || (!input.trim() && !selectedFile)}
-              className="w-20 sm:w-24 h-12 bg-orange-500 hover:bg-orange-600 text-white"
+              className="w-20 sm:w-24 h-24 bg-orange-500 hover:bg-orange-600 text-white"
             >
               {isLoading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -353,26 +355,37 @@ function ChatContent() {
 function ChatSkeleton() {
   return (
     <>
-      <div className="flex-1 overflow-y-auto p-4">
-        <Skeleton className="h-16 w-3/4 mb-4" />
-        <Skeleton className="h-16 w-2/3 mb-4" />
-        <Skeleton className="h-16 w-3/4 mb-4" />
+      <div className="h-[65vh] sm:h-[70vh] overflow-y-auto mb-4 sm:mb-5 rounded-lg bg-background p-4">
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[250px]" />
+              <Skeleton className="h-4 w-[200px]" />
+            </div>
+          </div>
+          <div className="flex items-start gap-3 justify-end">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[200px]" />
+              <Skeleton className="h-4 w-[150px]" />
+            </div>
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </div>
       </div>
       
       <div className="p-4 border-t">
-        <div className="flex gap-2">
-          {/* Text input skeleton */}
-          <Skeleton className="flex-1 h-24 rounded-lg" />
-          
+        <div className="flex flex-col gap-2">
           {/* Media buttons skeleton */}
-          <div className="flex flex-col gap-2 w-12">
-            <Skeleton className="w-full h-11 rounded-lg" />
-            <Skeleton className="w-full h-11 rounded-lg" />
+          <div className="flex gap-2">
+            <Skeleton className="h-11 flex-1" />
+            <Skeleton className="h-11 flex-1" />
           </div>
           
-          {/* Send button skeleton */}
-          <div className="flex items-end">
-            <Skeleton className="w-24 h-12 rounded-lg" />
+          {/* Text input and send button skeleton */}
+          <div className="flex gap-2">
+            <Skeleton className="h-24 flex-1" />
+            <Skeleton className="h-24 w-20 sm:w-24" />
           </div>
         </div>
       </div>

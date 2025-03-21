@@ -30,9 +30,20 @@ export function CameraCapture({
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
+      // Try to get the rear camera first
+      let stream;
+      
+      try {
+        // First try with exact environment (rear camera) constraint
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: 'environment' } }
+        });
+      } catch (err) {
+        // If that fails, try with a preference for environment but accept any camera
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+      }
       
       streamRef.current = stream;
       
