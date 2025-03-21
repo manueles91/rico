@@ -33,18 +33,29 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Update document class when theme changes
+  // Force an immediate update of the document class when theme changes or on mount
   useEffect(() => {
     if (!mounted) return;
     
     const root = document.documentElement;
     
-    // Remove both classes and add the current one
+    // Force style recalculation by removing both classes first
     root.classList.remove('light', 'dark');
-    root.classList.add(theme);
     
-    // Save to localStorage
-    localStorage.setItem('theme', theme);
+    // Add a small delay before adding the new class to ensure the removal has taken effect
+    setTimeout(() => {
+      root.classList.add(theme);
+      // Save to localStorage
+      localStorage.setItem('theme', theme);
+      
+      // Apply a data attribute as a backup
+      root.setAttribute('data-theme', theme);
+      
+      // Explicitly add background color class
+      document.body.className = document.body.className
+        .replace(/bg-\S+/g, '')
+        .concat(` bg-background text-foreground`);
+    }, 10);
   }, [theme, mounted]);
 
   const toggleTheme = () => {

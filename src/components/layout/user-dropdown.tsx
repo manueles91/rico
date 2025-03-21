@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { useAccount } from "@/contexts/account-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,6 +31,7 @@ export function UserDropdown() {
   const userInitial = stackUser?.displayName?.[0] || 'U';
   const userName = stackUser?.displayName || 'User';
   const userEmail = stackUser?.primaryEmail || '';
+  const isDarkMode = theme === 'dark';
 
   return (
     <DropdownMenu>
@@ -81,15 +82,15 @@ export function UserDropdown() {
         
         {/* Theme Toggle */}
         <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
-          {theme === 'light' ? (
-            <>
-              <Moon className="mr-2 h-4 w-4" />
-              <span>Dark Mode</span>
-            </>
-          ) : (
+          {isDarkMode ? (
             <>
               <Sun className="mr-2 h-4 w-4" />
               <span>Light Mode</span>
+            </>
+          ) : (
+            <>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>Dark Mode</span>
             </>
           )}
         </DropdownMenuItem>

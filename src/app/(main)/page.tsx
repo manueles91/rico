@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
   return (
-    <div className="container mx-auto max-w-4xl px-3 sm:px-4">
+    <div className="container mx-auto max-w-4xl px-3 sm:px-4 bg-background dark:bg-background">
       <Suspense fallback={<ChatSkeleton />}>
         <ChatContent />
       </Suspense>

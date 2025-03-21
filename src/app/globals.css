@@ -71,7 +71,21 @@
     @apply border-border;
   }
   body {
+    @apply bg-background text-foreground transition-colors duration-150;
+  }
+
+  /* Additional dark mode classes for better compatibility */
+  .dark body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Force background for root elements */
+  html, body, main {
+    @apply bg-background;
+  }
+  
+  html.dark, body.dark, main.dark {
+    @apply bg-background;
   }
 }
 
