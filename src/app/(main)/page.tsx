@@ -268,33 +268,39 @@ function ChatContent() {
         <ChatMessageList messages={messages} />
       </div>
       
-      <form onSubmit={handleSubmit} className="flex gap-2 sm:gap-3 pt-2 pb-3">
-        <FileUpload 
-          onFileSelect={handleFileSelect}
-          onClear={handleClearFile}
-          selectedFile={selectedFile}
-          isUploading={isUploading}
-        />
-        <CameraCapture
-          onPhotoCapture={handleFileSelect}
-          onClear={handleClearFile}
-          capturedPhoto={selectedFile}
-          isCapturing={isUploading}
-        />
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={selectedFile ? "Ask about the image..." : "Type your message..."}
-          disabled={isLoading}
-          className="flex-1 text-sm sm:text-base h-11 sm:h-12"
-        />
-        <Button 
-          type="submit" 
-          disabled={isLoading}
-          className="h-11 sm:h-12 px-4 sm:px-5"
-        >
-          {isLoading ? 'Sending...' : 'Send'}
-        </Button>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:gap-3">
+        <div className="flex gap-2 sm:gap-3">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={selectedFile ? "Ask about the image..." : "Type your message..."}
+            disabled={isLoading}
+            className="flex-1 text-sm sm:text-base h-11 sm:h-12"
+          />
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <FileUpload 
+                onFileSelect={handleFileSelect}
+                onClear={handleClearFile}
+                selectedFile={selectedFile}
+                isUploading={isUploading}
+              />
+              <CameraCapture
+                onPhotoCapture={handleFileSelect}
+                onClear={handleClearFile}
+                capturedPhoto={selectedFile}
+                isCapturing={isUploading}
+              />
+            </div>
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="h-11 sm:h-12 px-4 sm:px-5 w-full"
+            >
+              {isLoading ? 'Sending...' : 'Send'}
+            </Button>
+          </div>
+        </div>
       </form>
     </>
   );
@@ -304,11 +310,15 @@ function ChatSkeleton() {
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
       <Skeleton className="h-[65vh] sm:h-[70vh] w-full rounded-lg" />
-      <div className="flex gap-2 sm:gap-3 pt-2 pb-3">
-        <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
-        <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
+      <div className="flex gap-2 sm:gap-3">
         <Skeleton className="h-11 sm:h-12 flex-1" />
-        <Skeleton className="h-11 sm:h-12 w-20 sm:w-24" />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
+            <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
+          </div>
+          <Skeleton className="h-11 sm:h-12 w-24 sm:w-28" />
+        </div>
       </div>
     </div>
   );

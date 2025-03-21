@@ -47,25 +47,28 @@ export function ChatMessage({ message }: ChatMessageProps) {
             />
           </div>
         )}
-        <div className="prose prose-sm dark:prose-invert max-w-none break-words">
+        <div className={cn(
+          'prose prose-sm dark:prose-invert max-w-none break-words',
+          isUser && 'prose-p:text-white prose-headings:text-white prose-ul:text-white prose-ol:text-white prose-li:text-white'
+        )}>
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             components={{
               // Override default element styling
-              p: ({ children }) => <p className="mb-2 whitespace-pre-wrap">{children}</p>,
-              ul: ({ children }) => <ul className="mb-2 list-disc pl-4">{children}</ul>,
-              ol: ({ children }) => <ol className="mb-2 list-decimal pl-4">{children}</ol>,
-              li: ({ children }) => <li className="mb-1">{children}</li>,
-              h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
-              h2: ({ children }) => <h2 className="text-lg font-bold mb-2">{children}</h2>,
-              h3: ({ children }) => <h3 className="text-md font-bold mb-2">{children}</h3>,
+              p: ({ children }) => <p className={`mb-2 whitespace-pre-wrap ${isUser ? 'text-white' : ''}`}>{children}</p>,
+              ul: ({ children }) => <ul className={`mb-2 list-disc pl-4 ${isUser ? 'text-white' : ''}`}>{children}</ul>,
+              ol: ({ children }) => <ol className={`mb-2 list-decimal pl-4 ${isUser ? 'text-white' : ''}`}>{children}</ol>,
+              li: ({ children }) => <li className={`mb-1 ${isUser ? 'text-white' : ''}`}>{children}</li>,
+              h1: ({ children }) => <h1 className={`text-xl font-bold mb-2 ${isUser ? 'text-white' : ''}`}>{children}</h1>,
+              h2: ({ children }) => <h2 className={`text-lg font-bold mb-2 ${isUser ? 'text-white' : ''}`}>{children}</h2>,
+              h3: ({ children }) => <h3 className={`text-md font-bold mb-2 ${isUser ? 'text-white' : ''}`}>{children}</h3>,
               code: ({ node, inline, className, children, ...props }: CodeComponentProps) => {
                 const match = /language-(\w+)/.exec(className || '');
                 if (inline) {
-                  return <code className="bg-muted-foreground/20 dark:bg-background/50 rounded px-1 py-0.5">{children}</code>;
+                  return <code className={`bg-muted-foreground/20 dark:bg-background/50 rounded px-1 py-0.5 ${isUser ? 'text-white' : ''}`}>{children}</code>;
                 }
                 return (
-                  <pre className="bg-muted-foreground/20 dark:bg-background/50 rounded p-2 overflow-x-auto mb-2 text-xs sm:text-sm">
+                  <pre className={`bg-muted-foreground/20 dark:bg-background/50 rounded p-2 overflow-x-auto mb-2 text-xs sm:text-sm ${isUser ? 'text-white' : ''}`}>
                     <code className={match ? `language-${match[1]}` : ''} {...props}>
                       {children}
                     </code>

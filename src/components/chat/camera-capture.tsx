@@ -25,34 +25,74 @@ export function CameraCapture({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [hasCamera, setHasCamera] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [hasCamera, setHasCamera] = useState(true); // Default to true for better UX
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Check if camera is available
+  // Check device type and camera availability
   useEffect(() => {
-    navigator.mediaDevices.enumerateDevices()
-      .then(devices => {
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        setHasCamera(videoDevices.length > 0);
-      })
-      .catch(err => {
-        console.error('Error checking camera availability:', err);
-        setHasCamera(false);
-      });
+    // Check if mobile device
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    setIsMobile(/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase()));
+    
+    // Check camera availability
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          setHasCamera(videoDevices.length > 0);
+        })
+        .catch(err => {
+          console.error('Error checking camera availability:', err);
+          // Don't set hasCamera to false on error, as it might be a permission issue
+        });
+    }
   }, []);
+
+  // Handle file selection from native file picker (fallback for mobile)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Check file size (max 20MB as per OpenAI requirements)
+    if (file.size > 20 * 1024 * 1024) {
+      alert('File size must be less than 20MB');
+      return;
+    }
+
+    onPhotoCapture(file);
+    
+    // Create preview URL
+    setPreviewUrl(URL.createObjectURL(file));
+  };
 
   // Handle starting the camera stream
   const startCamera = async () => {
+    // For mobile devices, use the native camera
+    if (isMobile) {
+      fileInputRef.current?.click();
+      return;
+    }
+    
     try {
       if (videoRef.current) {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const constraints = {
           video: {
             facingMode: 'environment',
             width: { ideal: 1280 },
             height: { ideal: 720 }
           },
           audio: false
-        });
+        };
+        
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         
         videoRef.current.srcObject = stream;
         setStream(stream);
@@ -61,6 +101,9 @@ export function CameraCapture({
     } catch (err) {
       console.error('Error accessing camera:', err);
       alert('Could not access the camera. Please check permissions and try again.');
+      
+      // Fallback to file input
+      fileInputRef.current?.click();
     }
   };
 
@@ -110,11 +153,24 @@ export function CameraCapture({
     onClear();
     setPreviewUrl(null);
     stopCamera();
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   return (
     <div className={cn('relative', className)}>
-      <input type="hidden" /> {/* Placeholder for form compatibility */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        disabled={isCapturing}
+      />
       
       {capturedPhoto && previewUrl ? (
         <div className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-md overflow-hidden flex-shrink-0">
@@ -139,17 +195,17 @@ export function CameraCapture({
           variant="outline"
           size="icon"
           onClick={startCamera}
-          disabled={isCapturing || !hasCamera}
+          disabled={isCapturing}
           className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
           aria-label="Take photo"
-          title={!hasCamera ? "Camera not available" : "Take a photo"}
+          title="Take a photo"
         >
           <Camera size={16} className="sm:size-[18px]" />
         </Button>
       )}
       
-      {/* Camera modal */}
-      {showCamera && (
+      {/* Camera modal (only shown on desktop) */}
+      {showCamera && !isMobile && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
           <div className="bg-background rounded-lg p-4 max-w-md w-full max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center mb-2">
