@@ -108,9 +108,7 @@ function ChatContent() {
     
     // Optional: You could set an appropriate default text input based on the image
     if (input === '') {
-      setInput(file.name.includes('camera-photo') 
-        ? 'Process this receipt' 
-        : 'Analyze this image');
+      setInput('Add this expense');
     }
   };
 
@@ -120,7 +118,7 @@ function ChatContent() {
     setFileSource(null);
     
     // Optional: Clear input if it was auto-set
-    if (input === 'Process this receipt' || input === 'Analyze this image') {
+    if (input === 'Process this receipt' || input === 'Add this expense') {
       setInput('');
     }
   };
@@ -182,7 +180,7 @@ function ChatContent() {
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim() || 'Add this expense',
+      content: selectedFile ? 'Shared an image' : input.trim() || 'Add this expense',
       ...(imageUrl && { imageUrl }),
       ...(imageBase64 && { imageBase64 }),
     };
@@ -283,11 +281,11 @@ function ChatContent() {
   
   return (
     <>
-      <div className="h-[65vh] sm:h-[70vh] overflow-y-auto mb-4 sm:mb-5 rounded-lg bg-background">
+      <div className="h-[65vh] sm:h-[70vh] overflow-y-auto mb-2 sm:mb-3 rounded-lg bg-background">
         <ChatMessageList messages={messages} />
       </div>
       
-      <div className="p-4 border-t">
+      <div className="p-2 border-t">
         <form
           onSubmit={handleSubmit}
           className="flex flex-col gap-2"
@@ -316,10 +314,10 @@ function ChatContent() {
             <div className="relative flex-1">
               <ChatVanishInput
                 placeholders={[
-                  "Type your message...",
-                  "Add an expense...",
-                  "Ask me anything...",
-                  "Upload a receipt...",
+                  "Expense 20,000, padel, Puro Padel today",
+                  "Add recurring subscription on 1st day of every month, 4,000, for netflix",
+                  "What % of my expenses last month was food/dining?",
+                  "What are expenses could I reduce to achieve our discussed goal by December?"
                 ]}
                 onChange={handleInputChange}
                 onSubmit={handleSubmit}
@@ -334,7 +332,7 @@ function ChatContent() {
             <Button 
               type="submit" 
               disabled={isLoading || (!input.trim() && !selectedFile)}
-              className="w-20 sm:w-24 h-24 bg-orange-500 hover:bg-orange-600 text-white"
+              className="w-20 sm:w-24 h-12 bg-orange-500 hover:bg-orange-600 text-white"
             >
               {isLoading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -355,7 +353,7 @@ function ChatContent() {
 function ChatSkeleton() {
   return (
     <>
-      <div className="h-[65vh] sm:h-[70vh] overflow-y-auto mb-4 sm:mb-5 rounded-lg bg-background p-4">
+      <div className="h-[65vh] sm:h-[70vh] overflow-y-auto mb-2 sm:mb-3 rounded-lg bg-background p-2">
         <div className="flex flex-col space-y-4">
           <div className="flex items-start gap-3">
             <Skeleton className="h-10 w-10 rounded-full" />
@@ -374,7 +372,7 @@ function ChatSkeleton() {
         </div>
       </div>
       
-      <div className="p-4 border-t">
+      <div className="p-2 border-t">
         <div className="flex flex-col gap-2">
           {/* Media buttons skeleton */}
           <div className="flex gap-2">
@@ -384,8 +382,8 @@ function ChatSkeleton() {
           
           {/* Text input and send button skeleton */}
           <div className="flex gap-2">
-            <Skeleton className="h-24 flex-1" />
-            <Skeleton className="h-24 w-20 sm:w-24" />
+            <Skeleton className="h-12 flex-1" />
+            <Skeleton className="h-12 w-20 sm:w-24" />
           </div>
         </div>
       </div>

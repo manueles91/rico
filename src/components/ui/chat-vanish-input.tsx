@@ -203,7 +203,7 @@ export function ChatVanishInput({
         value={value}
         disabled={disabled}
         className={cn(
-          "w-full h-full px-4 py-3 bg-background rounded-lg border border-input resize-none focus:outline-none focus:ring-1 focus:ring-primary",
+          "w-full h-12 px-4 py-2 bg-background rounded-lg border border-input resize-none focus:outline-none focus:ring-1 focus:ring-primary",
           animating && "text-transparent"
         )}
         maxLength={1000}
