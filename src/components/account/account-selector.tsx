@@ -24,8 +24,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Info, Users, User } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 interface AccountSelectorProps {
   className?: string;
@@ -36,6 +38,8 @@ export function AccountSelector({ className }: AccountSelectorProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountDescription, setNewAccountDescription] = useState('');
+  const [accountType, setAccountType] = useState<'personal' | 'shared'>('personal');
+  const [invitedEmails, setInvitedEmails] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
   if (isLoading) {
@@ -52,6 +56,26 @@ export function AccountSelector({ className }: AccountSelectorProps) {
       return;
     }
 
+    // Validate emails if it's a shared account
+    let emailsToInvite: string[] = [];
+    if (accountType === 'shared' && invitedEmails.trim()) {
+      emailsToInvite = invitedEmails
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email.length > 0);
+
+      // Basic email validation
+      const invalidEmails = emailsToInvite.filter(email => !email.includes('@') || !email.includes('.'));
+      if (invalidEmails.length > 0) {
+        toast({
+          title: 'Invalid Emails',
+          description: `The following emails appear to be invalid: ${invalidEmails.join(', ')}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setIsCreating(true);
 
     try {
@@ -63,7 +87,8 @@ export function AccountSelector({ className }: AccountSelectorProps) {
         body: JSON.stringify({
           name: newAccountName.trim(),
           description: newAccountDescription.trim() || `Account for ${newAccountName.trim()}`,
-          isPersonal: true, // For now, all new accounts are personal
+          isPersonal: accountType === 'personal',
+          invitedEmails: emailsToInvite,
         }),
       });
 
@@ -77,12 +102,16 @@ export function AccountSelector({ className }: AccountSelectorProps) {
       if (data.success && data.data) {
         toast({
           title: 'Success',
-          description: 'Account created successfully',
+          description: accountType === 'shared' && emailsToInvite.length > 0
+            ? `Account created and invitations sent to ${emailsToInvite.length} email(s)`
+            : 'Account created successfully',
         });
 
         // Reset form
         setNewAccountName('');
         setNewAccountDescription('');
+        setInvitedEmails('');
+        setAccountType('personal');
         setIsCreateDialogOpen(false);
 
         // Refresh accounts and switch to the new one
@@ -152,33 +181,82 @@ export function AccountSelector({ className }: AccountSelectorProps) {
       </Select>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Create New Account</DialogTitle>
             <DialogDescription>
               Create a new account to manage your finances separately.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Account Name</Label>
-              <Input
-                id="name"
-                value={newAccountName}
-                onChange={(e) => setNewAccountName(e.target.value)}
-                placeholder="e.g. Personal Account"
-              />
+          
+          <Tabs defaultValue="personal" onValueChange={(value: string) => setAccountType(value as 'personal' | 'shared')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="personal" className="flex items-center gap-2">
+                <User size={16} />
+                <span>Personal</span>
+              </TabsTrigger>
+              <TabsTrigger value="shared" className="flex items-center gap-2">
+                <Users size={16} />
+                <span>Shared</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            <div className="mt-4">
+              <div className="flex items-center mb-2">
+                <h4 className="text-sm font-medium mr-2">Account Type</h4>
+                <div className="relative group">
+                  <Info size={16} className="text-muted-foreground" />
+                  <div className="absolute left-0 bottom-full mb-2 w-64 p-2 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity">
+                    {accountType === 'personal' ? (
+                      "Personal accounts are private and only accessible by you."
+                    ) : (
+                      "Shared accounts allow multiple users to collaborate. Perfect for couples sharing expenses or group trips."
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Account Name</Label>
+                  <Input
+                    id="name"
+                    value={newAccountName}
+                    onChange={(e) => setNewAccountName(e.target.value)}
+                    placeholder={accountType === 'personal' ? "e.g. My Personal Account" : "e.g. Family Expenses"}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Description (optional)</Label>
+                  <Input
+                    id="description"
+                    value={newAccountDescription}
+                    onChange={(e) => setNewAccountDescription(e.target.value)}
+                    placeholder={accountType === 'personal' ? "e.g. My personal finances" : "e.g. Shared expenses with family"}
+                  />
+                </div>
+                
+                {accountType === 'shared' && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="emails">
+                      Invite Members (comma-separated emails)
+                    </Label>
+                    <Textarea
+                      id="emails"
+                      value={invitedEmails}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInvitedEmails(e.target.value)}
+                      placeholder="e.g. friend@example.com, spouse@example.com"
+                      className="min-h-[80px]"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Invitees will receive an email with instructions to join this account.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <Input
-                id="description"
-                value={newAccountDescription}
-                onChange={(e) => setNewAccountDescription(e.target.value)}
-                placeholder="e.g. My personal finances"
-              />
-            </div>
-          </div>
+          </Tabs>
+          
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
               Cancel

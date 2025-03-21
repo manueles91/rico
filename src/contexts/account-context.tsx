@@ -14,7 +14,7 @@ interface AccountContextType {
   error: Error | null;
   switchAccount: (accountId: string) => void;
   refreshAccounts: () => Promise<void>;
-  createAccount: (name: string, description: string) => Promise<Account | null>;
+  createAccount: (name: string, description: string, isPersonal?: boolean, invitedEmails?: string[]) => Promise<Account | null>;
 }
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
@@ -179,7 +179,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Function to create a new account
-  const createAccount = async (name: string, description: string) => {
+  const createAccount = async (name: string, description: string, isPersonal: boolean = true, invitedEmails: string[] = []) => {
     try {
       const response = await fetch('/api/accounts', {
         method: 'POST',
@@ -189,6 +189,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           name,
           description,
+          isPersonal,
+          invitedEmails,
         }),
       });
       
@@ -207,7 +209,11 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         
         toast({
           title: 'Account created',
-          description: 'Your new account has been created successfully.',
+          description: isPersonal 
+            ? 'Your new personal account has been created successfully.'
+            : invitedEmails.length > 0
+              ? `Your shared account has been created and invitations sent to ${invitedEmails.length} email(s).`
+              : 'Your shared account has been created successfully.',
         });
         
         return data.data;

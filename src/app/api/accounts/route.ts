@@ -332,7 +332,7 @@ export async function POST(request: NextRequest) {
           `INSERT INTO accounts (name, description, is_personal)
            VALUES ($1, $2, $3)
            RETURNING *`,
-          [body.name, body.description || null, body.isPersonal || false]
+          [body.name, body.description || null, body.isPersonal !== false]
         );
         
         const account = accountResult.rows[0];
@@ -343,6 +343,31 @@ export async function POST(request: NextRequest) {
            VALUES ($1, $2, $3)`,
           [account.id, stackUser.id, 'owner']
         );
+        
+        // Process invitations for shared accounts
+        if (!body.isPersonal && body.invitedEmails && Array.isArray(body.invitedEmails) && body.invitedEmails.length > 0) {
+          // Generate a random token for each invitation
+          for (const email of body.invitedEmails) {
+            const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            
+            // Create invitation record
+            await client.query(
+              `INSERT INTO invitations (account_id, email, role, token, invited_by, expires_at)
+               VALUES ($1, $2, $3, $4, $5, $6)`,
+              [
+                account.id, 
+                email, 
+                'editor', // Default role for invited members
+                token,
+                stackUser.id,
+                new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Expires in 7 days
+              ]
+            );
+            
+            // TODO: Send invitation email
+            console.log(`Invitation created for ${email} to join account ${account.id}`);
+          }
+        }
         
         return account;
       });

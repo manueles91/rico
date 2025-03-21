@@ -2,9 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ImageIcon, X } from 'lucide-react';
-import Image from 'next/image';
+import { Image, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import NextImage from 'next/image';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -21,8 +21,8 @@ export function FileUpload({
   isUploading,
   className,
 }: FileUploadProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,27 +43,21 @@ export function FileUpload({
     onFileSelect(file);
     
     // Create preview URL
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
   const handleClear = () => {
     onClear();
     setPreviewUrl(null);
+    
+    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   return (
-    <div className={cn('flex items-center', className)}>
+    <div className={cn('relative', className)}>
       <input
         type="file"
         ref={fileInputRef}
@@ -75,9 +69,9 @@ export function FileUpload({
       
       {selectedFile && previewUrl ? (
         <div className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-md overflow-hidden flex-shrink-0">
-          <Image
+          <NextImage
             src={previewUrl}
-            alt="Selected image"
+            alt="Selected file"
             fill
             className="object-cover"
           />
@@ -85,7 +79,7 @@ export function FileUpload({
             onClick={handleClear}
             className="absolute top-0 right-0 bg-black/70 p-0.5 rounded-bl-md"
             disabled={isUploading}
-            aria-label="Remove image"
+            aria-label="Remove file"
           >
             <X size={12} className="text-white" />
           </button>
@@ -95,12 +89,13 @@ export function FileUpload({
           type="button"
           variant="outline"
           size="icon"
-          onClick={handleButtonClick}
+          onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
           className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
           aria-label="Upload image"
+          title="Upload an image"
         >
-          <ImageIcon size={16} className="sm:size-[18px]" />
+          <Image size={16} className="sm:size-[18px]" />
         </Button>
       )}
     </div>

@@ -278,18 +278,20 @@ function ChatContent() {
             className="flex-1 min-h-[5.5rem] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
           <div className="flex flex-col gap-2 w-[30%] sm:w-[25%] md:w-[20%]">
-            <div className="flex gap-2">
+            <div className="flex justify-between w-full">
               <FileUpload 
                 onFileSelect={handleFileSelect}
                 onClear={handleClearFile}
                 selectedFile={selectedFile}
                 isUploading={isUploading}
+                className="flex-1 mr-2"
               />
               <CameraCapture
                 onPhotoCapture={handleFileSelect}
                 onClear={handleClearFile}
                 capturedPhoto={selectedFile}
                 isCapturing={isUploading}
+                className="flex-1"
               />
             </div>
             <Button 
@@ -313,9 +315,9 @@ function ChatSkeleton() {
       <div className="flex gap-2 sm:gap-3">
         <Skeleton className="h-[5.5rem] flex-1" />
         <div className="flex flex-col gap-2 w-[30%] sm:w-[25%] md:w-[20%]">
-          <div className="flex gap-2">
-            <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
-            <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
+          <div className="flex justify-between w-full">
+            <Skeleton className="h-11 sm:h-12 w-[48%]" />
+            <Skeleton className="h-11 sm:h-12 w-[48%]" />
           </div>
           <Skeleton className="h-11 sm:h-12 w-full" />
         </div>
