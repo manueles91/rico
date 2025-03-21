@@ -270,14 +270,14 @@ function ChatContent() {
       
       <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:gap-3">
         <div className="flex gap-2 sm:gap-3">
-          <Input
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={selectedFile ? "Ask about the image..." : "Type your message..."}
             disabled={isLoading}
-            className="flex-1 text-sm sm:text-base h-11 sm:h-12"
+            className="flex-1 min-h-[5.5rem] resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 w-[30%] sm:w-[25%] md:w-[20%]">
             <div className="flex gap-2">
               <FileUpload 
                 onFileSelect={handleFileSelect}
@@ -311,13 +311,13 @@ function ChatSkeleton() {
     <div className="flex flex-col gap-3 sm:gap-4">
       <Skeleton className="h-[65vh] sm:h-[70vh] w-full rounded-lg" />
       <div className="flex gap-2 sm:gap-3">
-        <Skeleton className="h-11 sm:h-12 flex-1" />
-        <div className="flex flex-col gap-2">
+        <Skeleton className="h-[5.5rem] flex-1" />
+        <div className="flex flex-col gap-2 w-[30%] sm:w-[25%] md:w-[20%]">
           <div className="flex gap-2">
             <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
             <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
           </div>
-          <Skeleton className="h-11 sm:h-12 w-24 sm:w-28" />
+          <Skeleton className="h-11 sm:h-12 w-full" />
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ interface AccountContextType {
   error: Error | null;
   switchAccount: (accountId: string) => void;
   refreshAccounts: () => Promise<void>;
+  createAccount: (name: string, description: string) => Promise<Account | null>;
 }
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
@@ -177,6 +178,54 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Function to create a new account
+  const createAccount = async (name: string, description: string) => {
+    try {
+      const response = await fetch('/api/accounts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          description,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error creating account:', errorData);
+        throw new Error(errorData.message || 'Failed to create account');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setAccounts([...accounts, data.data]);
+        setCurrentAccount(data.data);
+        Cookies.set('currentAccountId', data.data.id, { expires: 30 });
+        
+        toast({
+          title: 'Account created',
+          description: 'Your new account has been created successfully.',
+        });
+        
+        return data.data;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      console.error('Error creating account:', err);
+      
+      toast({
+        title: 'Error',
+        description: `Failed to create account: ${(err as Error).message}`,
+        variant: 'destructive',
+      });
+    }
+    
+    return null;
+  };
+
   // Fetch user accounts when the user is loaded
   useEffect(() => {
     if (!isUserLoading) {
@@ -206,6 +255,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         error,
         switchAccount,
         refreshAccounts: fetchAccounts,
+        createAccount,
       }}
     >
       {children}
