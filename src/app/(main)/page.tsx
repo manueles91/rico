@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ChatMessage, MessageRole } from '@/components/chat/types';
 import { ChatMessageList } from '@/components/chat/chat-message-list';
 import { FileUpload } from '@/components/chat/file-upload';
+import { CameraCapture } from '@/components/chat/camera-capture';
 import { toast } from '@/components/ui/use-toast';
 import { useAccount } from '@/contexts/account-context';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,6 +35,7 @@ function ChatContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [fileSource, setFileSource] = useState<'upload' | 'camera' | null>(null);
 
   // Load conversation history when account changes
   useEffect(() => {
@@ -88,6 +90,36 @@ function ChatContent() {
     loadConversationHistory();
     // Only load when account changes or when explicitly requested
   }, [currentAccount?.id, isAccountLoading]);
+
+  // Handle file selection from either upload or camera
+  const handleFileSelect = (file: File) => {
+    // Clear any existing file
+    if (selectedFile) {
+      handleClearFile();
+    }
+    
+    // Set the new file and its source
+    setSelectedFile(file);
+    setFileSource(file.name.includes('camera-photo') ? 'camera' : 'upload');
+    
+    // Optional: You could set an appropriate default text input based on the image
+    if (input === '') {
+      setInput(file.name.includes('camera-photo') 
+        ? 'Process this receipt' 
+        : 'Analyze this image');
+    }
+  };
+
+  // Clear the selected file
+  const handleClearFile = () => {
+    setSelectedFile(null);
+    setFileSource(null);
+    
+    // Optional: Clear input if it was auto-set
+    if (input === 'Process this receipt' || input === 'Analyze this image') {
+      setInput('');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -215,14 +247,6 @@ function ChatContent() {
     }
   };
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-  };
-
-  const handleClearFile = () => {
-    setSelectedFile(null);
-  };
-  
   if (isAccountLoading) {
     return <ChatSkeleton />;
   }
@@ -240,28 +264,34 @@ function ChatContent() {
   
   return (
     <>
-      <Card className="p-2 sm:p-4 mb-3 h-[60vh] sm:h-[65vh] overflow-y-auto">
+      <div className="h-[65vh] sm:h-[70vh] overflow-y-auto mb-4 sm:mb-5 rounded-lg bg-background">
         <ChatMessageList messages={messages} />
-      </Card>
+      </div>
       
-      <form onSubmit={handleSubmit} className="flex gap-1 sm:gap-2">
+      <form onSubmit={handleSubmit} className="flex gap-2 sm:gap-3 pt-2 pb-3">
         <FileUpload 
           onFileSelect={handleFileSelect}
           onClear={handleClearFile}
           selectedFile={selectedFile}
           isUploading={isUploading}
         />
+        <CameraCapture
+          onPhotoCapture={handleFileSelect}
+          onClear={handleClearFile}
+          capturedPhoto={selectedFile}
+          isCapturing={isUploading}
+        />
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={selectedFile ? "Ask about the image..." : "Type your message..."}
           disabled={isLoading}
-          className="flex-1 text-sm sm:text-base h-9 sm:h-10"
+          className="flex-1 text-sm sm:text-base h-11 sm:h-12"
         />
         <Button 
           type="submit" 
           disabled={isLoading}
-          className="h-9 sm:h-10 px-3 sm:px-4"
+          className="h-11 sm:h-12 px-4 sm:px-5"
         >
           {isLoading ? 'Sending...' : 'Send'}
         </Button>
@@ -273,11 +303,12 @@ function ChatContent() {
 function ChatSkeleton() {
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
-      <Skeleton className="h-[70vh] sm:h-[75vh] w-full rounded-lg" />
-      <div className="flex gap-1 sm:gap-2">
-        <Skeleton className="h-9 sm:h-10 w-9 sm:w-10" />
-        <Skeleton className="h-9 sm:h-10 flex-1" />
-        <Skeleton className="h-9 sm:h-10 w-16 sm:w-20" />
+      <Skeleton className="h-[65vh] sm:h-[70vh] w-full rounded-lg" />
+      <div className="flex gap-2 sm:gap-3 pt-2 pb-3">
+        <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
+        <Skeleton className="h-11 sm:h-12 w-11 sm:w-12" />
+        <Skeleton className="h-11 sm:h-12 flex-1" />
+        <Skeleton className="h-11 sm:h-12 w-20 sm:w-24" />
       </div>
     </div>
   );
