@@ -3,6 +3,8 @@ import { queryOne } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api-utils';
 
 // GET /api/accounts/[accountId]/validate-share - Validate a shareable link
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { accountId: string } }

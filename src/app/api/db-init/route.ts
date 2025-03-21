@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { initializeDatabase } from '@/db';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * API route to initialize the database
  * This should be called during app deployment or first run

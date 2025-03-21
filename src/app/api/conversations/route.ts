@@ -7,6 +7,8 @@ import {
 } from '@/lib/api-utils';
 import { NextRequest } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export interface Conversation {
   id: string;
   account_id: string;

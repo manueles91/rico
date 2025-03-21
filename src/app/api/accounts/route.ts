@@ -8,6 +8,8 @@ import { NextRequest } from 'next/server';
 import { stackServerApp } from '@/stack';
 import { getCurrentUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export interface Account {
   id: string;
   name: string;

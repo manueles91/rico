@@ -9,6 +9,8 @@ import { Account } from '@/db/schema';
  * This endpoint is used to check if a user has any accounts in the system
  * even if they don't show up in the regular accounts endpoint
  */
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;

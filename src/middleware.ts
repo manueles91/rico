@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
 // Configure the middleware to run only on specific paths
 export const config = {
   matcher: [
-    // Run on all pages except API routes, static files, and auth handlers
-    '/((?!api|_next/static|_next/image|favicon.ico|handler/\\[...stack\\]).*)',
+    // Run on all pages except static files and auth handlers
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };

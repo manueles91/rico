@@ -78,3 +78,5 @@ export async function POST(
     return errorResponse('An unexpected error occurred', 500);
   }
 }
+
+export const dynamic = 'force-dynamic';

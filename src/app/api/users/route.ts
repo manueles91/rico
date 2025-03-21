@@ -56,3 +56,5 @@ export async function POST(request: NextRequest) {
     return errorResponse(`Error creating user: ${error.message}`);
   }
 }
+
+export const dynamic = 'force-dynamic';

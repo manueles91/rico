@@ -2,10 +2,13 @@ import { query, queryOne } from '@/lib/db';
 import {
   successResponse,
   createdResponse,
+  notFoundResponse,
   errorResponse,
   forbiddenResponse,
 } from '@/lib/api-utils';
 import { NextRequest } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export interface Category {
   id: string;

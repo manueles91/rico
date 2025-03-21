@@ -8,6 +8,8 @@ import {
 import { NextRequest } from 'next/server';
 import { Expense, ExpenseWithCategories } from '../route';
 
+export const dynamic = 'force-dynamic';
+
 interface Params {
   params: {
     id: string;

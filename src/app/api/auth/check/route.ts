@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { stackServerApp } from '@/stack';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Check Stack Auth configuration

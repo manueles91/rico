@@ -5,6 +5,8 @@ import { stackServerApp } from '@/stack';
 import { nanoid } from 'nanoid';
 
 // POST /api/accounts/[accountId]/share - Generate a shareable link for an account
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { accountId: string } }

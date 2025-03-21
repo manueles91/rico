@@ -16,3 +16,5 @@ export async function GET(request: NextRequest) {
     return unauthorizedResponse(`Authentication error: ${error.message}`);
   }
 }
+
+export const dynamic = 'force-dynamic';

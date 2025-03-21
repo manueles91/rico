@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getPool } from '@/lib/db';
 import { stackServerApp } from '@/stack';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Get the user from Stack Auth

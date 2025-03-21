@@ -119,3 +119,5 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     return errorResponse(`Error deleting message: ${error.message}`);
   }
 }
+
+export const dynamic = 'force-dynamic';

@@ -16,6 +16,8 @@ const webhookEventSchema = z.object({
 
 type WebhookEvent = z.infer<typeof webhookEventSchema>;
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Verify webhook secret

@@ -3,6 +3,8 @@ import { query, queryOne, transaction } from '@/lib/db';
 import { successResponse, errorResponse } from '@/lib/api-utils';
 import { stackServerApp } from '@/stack';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/accounts/[accountId] - Get account details
 export async function GET(
   request: NextRequest,

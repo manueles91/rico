@@ -3,6 +3,8 @@ import { stackServerApp } from '@/stack';
 import { queryOne } from '@/lib/db';
 import { ensurePersonalAccount } from '@/lib/account';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Get the user from Stack Auth

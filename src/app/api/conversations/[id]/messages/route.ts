@@ -8,6 +8,8 @@ import {
 } from '@/lib/api-utils';
 import { NextRequest } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 interface Params {
   params: {
     id: string;
