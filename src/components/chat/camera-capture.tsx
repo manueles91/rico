@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Camera, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NextImage from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CameraCaptureProps {
   onCapture: (file: File) => void;
@@ -111,39 +112,53 @@ export function CameraCapture({
       {/* Hidden canvas for capturing photos */}
       <canvas ref={canvasRef} className="hidden" />
       
-      {showCamera && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-          <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 p-4 max-w-md mx-auto">
-            <div className="relative bg-card rounded-lg overflow-hidden shadow-lg">
-              <video 
-                ref={videoRef} 
-                className="w-full aspect-[4/3] bg-black"
-                autoPlay 
-                playsInline
-              />
-              
-              <div className="p-4 flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={stopCamera}
-                  disabled={isUploading}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={takePhoto}
-                  disabled={isUploading || !isStreaming}
-                >
-                  Capture
-                </Button>
+      <AnimatePresence>
+        {showCamera && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="fixed inset-x-0 top-1/2 -translate-y-1/2 p-4 max-w-md mx-auto"
+            >
+              <div className="relative bg-gray-900 rounded-2xl overflow-hidden shadow-lg border border-gray-800">
+                <video 
+                  ref={videoRef} 
+                  className="w-full aspect-[4/3] bg-black"
+                  autoPlay 
+                  playsInline
+                />
+                
+                <div className="p-4 flex justify-between items-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={stopCamera}
+                    disabled={isUploading}
+                    className="rounded-full px-4 border-gray-700 hover:bg-gray-800 text-gray-200"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={takePhoto}
+                    disabled={isUploading || !isStreaming}
+                    className="rounded-full px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                  >
+                    Capture
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {capturedImage && previewUrl ? (
-        <div className="relative h-11 w-full rounded-md overflow-hidden">
+        <div className="relative h-11 w-full rounded-md overflow-hidden border border-gray-700">
           <NextImage
             src={previewUrl}
             alt="Captured photo"
@@ -152,11 +167,11 @@ export function CameraCapture({
           />
           <button
             onClick={handleClear}
-            className="absolute top-0 right-0 bg-black/70 p-0.5 rounded-bl-md"
+            className="absolute top-0 right-0 bg-black/70 p-1 rounded-bl-md hover:bg-black/90 transition-colors"
             disabled={isUploading}
             aria-label="Remove photo"
           >
-            <X size={12} className="text-white" />
+            <X size={14} className="text-white" />
           </button>
         </div>
       ) : (
@@ -165,7 +180,7 @@ export function CameraCapture({
           variant="outline"
           onClick={startCamera}
           disabled={isUploading}
-          className="w-full h-11 p-0"
+          className="w-full h-11 p-0 border-gray-700 hover:bg-gray-800/50 dark:hover:bg-gray-800/50 text-gray-400 hover:text-gray-200 transition-colors"
           aria-label="Take photo"
           title="Take a photo"
         >

@@ -114,10 +114,77 @@ export async function seedDatabase() {
  * Initialize the database (run migrations and seed)
  */
 export async function initializeDatabase() {
-  const migrationsResult = await runMigrations();
-  if (!migrationsResult.success) {
-    return migrationsResult;
+  try {
+    console.log('Initializing database...');
+    
+    // First run all migrations
+    const migrationsResult = await runMigrations();
+    if (!migrationsResult.success) {
+      return migrationsResult;
+    }
+    
+    // Ensure core tables exist (this provides a fallback if migrations fail)
+    const client = await pool.connect();
+    try {
+      // Start a transaction
+      await client.query('BEGIN');
+      
+      // Create users table if it doesn't exist
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id UUID PRIMARY KEY,
+          email TEXT NOT NULL UNIQUE,
+          name TEXT,
+          avatar_url TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      
+      // Create accounts table if it doesn't exist
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS accounts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          is_personal BOOLEAN NOT NULL DEFAULT FALSE,
+          created_by UUID,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          is_deleted BOOLEAN DEFAULT FALSE,
+          deleted_at TIMESTAMP WITH TIME ZONE
+        );
+      `);
+      
+      // Create account_members table if it doesn't exist
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS account_members (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          account_id UUID NOT NULL,
+          user_id UUID NOT NULL,
+          role TEXT NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT unique_account_user UNIQUE(account_id, user_id),
+          CONSTRAINT fk_account FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+          CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      `);
+      
+      // Commit the transaction
+      await client.query('COMMIT');
+      console.log('Core tables initialized successfully');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error initializing core tables:', error);
+      return { success: false, error };
+    } finally {
+      client.release();
+    }
+    
+    // Finally seed the database
+    return await seedDatabase();
+  } catch (error) {
+    console.error('Error initializing database:', error);
+    return { success: false, error };
   }
-  
-  return await seedDatabase();
 }

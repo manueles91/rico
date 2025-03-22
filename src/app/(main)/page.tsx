@@ -1,23 +1,21 @@
 'use client';
 
-import { useState, useEffect, Suspense, useRef } from 'react';
-import { Card } from '@/components/ui/card';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ChatMessage, MessageRole } from '@/components/chat/types';
 import { ChatMessageList } from '@/components/chat/chat-message-list';
 import { FileUpload } from '@/components/chat/file-upload';
-import { CameraCapture } from '@/components/chat/camera-capture';
 import { toast } from '@/components/ui/use-toast';
 import { useAccount } from '@/contexts/account-context';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Send } from 'lucide-react';
-import { ChatVanishInput } from '@/components/ui/chat-vanish-input';
-
-export const dynamic = 'force-dynamic';
+import { Send, Plus, X, Image, Camera, Paperclip } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   return (
-    <div className="container mx-auto max-w-4xl px-3 sm:px-4 bg-background dark:bg-background">
+    <div className="container mx-auto max-w-4xl py-4 px-3 sm:py-6 sm:px-4">
       <Suspense fallback={<ChatSkeleton />}>
         <ChatContent />
       </Suspense>
@@ -35,11 +33,17 @@ function ChatContent() {
     },
   ]);
   const [input, setInput] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [fileSource, setFileSource] = useState<'upload' | 'camera' | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load conversation history when account changes
   useEffect(() => {
@@ -95,33 +99,23 @@ function ChatContent() {
     // Only load when account changes or when explicitly requested
   }, [currentAccount?.id, isAccountLoading]);
 
-  // Handle file selection from either upload or camera
-  const handleFileSelect = (file: File) => {
-    // Clear any existing file
-    if (selectedFile) {
-      handleClearFile();
-    }
-    
-    // Set the new file and its source
-    setSelectedFile(file);
-    setFileSource(file.name.includes('camera-photo') ? 'camera' : 'upload');
-    
-    // Optional: You could set an appropriate default text input based on the image
-    if (input === '') {
-      setInput('Add this expense');
-    }
-  };
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  // Clear the selected file
-  const handleClearFile = () => {
-    setSelectedFile(null);
-    setFileSource(null);
-    
-    // Optional: Clear input if it was auto-set
-    if (input === 'Process this receipt' || input === 'Add this expense') {
-      setInput('');
+  // Camera handling
+  useEffect(() => {
+    if (showCamera && videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
     }
-  };
+
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [showCamera, cameraStream]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -180,7 +174,7 @@ function ChatContent() {
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: selectedFile ? 'Shared an image' : input.trim() || 'Add this expense',
+      content: input.trim() || 'Add this expense',
       ...(imageUrl && { imageUrl }),
       ...(imageBase64 && { imageBase64 }),
     };
@@ -234,159 +228,260 @@ function ChatContent() {
         description: `Failed to get response: ${(error as Error).message}`,
         variant: 'destructive',
       });
-      
-      // Add error message
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: `Sorry, there was an error processing your request: ${(error as Error).message}`,
-        },
-      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      const form = e.currentTarget.form;
-      if (form) {
-        const formEvent = new Event('submit', { cancelable: true, bubbles: true });
-        form.dispatchEvent(formEvent);
+      handleSendMessage();
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (input.trim() || selectedFile) {
+      const form = document.createElement('form');
+      handleSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleCameraCapture = async () => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+        });
+        setCameraStream(stream);
+        setShowCamera(true);
+      } catch (err) {
+        console.error("Error accessing camera:", err);
+        toast({
+          title: 'Error',
+          description: 'Failed to access camera. Please check your permissions.',
+          variant: 'destructive',
+        });
       }
     }
   };
 
-  if (isAccountLoading) {
-    return <ChatSkeleton />;
-  }
-  
-  if (!currentAccount) {
-    return (
-      <div className="p-8 text-center">
-        <h2 className="text-xl font-semibold mb-4">No Account Selected</h2>
-        <p className="text-gray-600">
-          Please select an account from the dropdown in the header to start chatting.
-        </p>
-      </div>
-    );
-  }
-  
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+            setSelectedFile(file);
+            setShowCamera(false);
+
+            if (cameraStream) {
+              cameraStream.getTracks().forEach((track) => track.stop());
+              setCameraStream(null);
+            }
+          }
+        }, 'image/jpeg');
+      }
+    }
+  };
+
+  const closeCamera = () => {
+    setShowCamera(false);
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+  };
+
   return (
-    <>
-      <div className="h-[65vh] sm:h-[70vh] overflow-y-auto mb-2 sm:mb-3 rounded-lg bg-background">
+    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden bg-gray-950 dark:bg-black rounded-xl shadow-xl border border-gray-800">
+      {/* Messages Container */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-950 to-gray-900 dark:from-black dark:to-gray-900">
         <ChatMessageList messages={messages} />
+        <div ref={messagesEndRef} />
       </div>
-      
-      <div className="p-2 border-t">
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-2"
-        >
-          {/* Media buttons side-by-side */}
-          <div className="flex gap-2">
-            <FileUpload
-              onFileSelect={handleFileSelect}
-              onClear={handleClearFile}
-              selectedFile={selectedFile}
-              isUploading={isUploading}
-              className="flex-1"
+
+      {/* Input Area */}
+      <div className="p-4 bg-gray-900 dark:bg-gray-900 rounded-t-xl shadow-inner">
+        <form onSubmit={handleSubmit} className="flex items-center space-x-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="rounded-full bg-gray-800 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-white"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+          </Button>
+
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "auto", opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                className="flex space-x-2 overflow-hidden"
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-gray-800 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-400 dark:text-white"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Image className="h-5 w-5" />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-gray-800 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-400 dark:text-white"
+                  onClick={handleCameraCapture}
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full bg-gray-800 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-400 dark:text-white"
+                  disabled={true}
+                >
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="flex-1 relative">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask me anything..."
+              disabled={isLoading}
+              className="w-full p-3 bg-gray-800 dark:bg-gray-800 border-none rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-            <CameraCapture
-              onCapture={(file: File) => handleFileSelect(file)}
-              onClear={handleClearFile}
-              capturedImage={selectedFile}
-              isUploading={isUploading}
-              className="flex-1"
-            />
+            {selectedFile && (
+              <div className="absolute bottom-full mb-2 left-0 bg-gray-800 rounded-lg p-2 flex items-center">
+                <span className="text-xs text-white truncate max-w-[150px]">{selectedFile.name}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-2 text-gray-400 hover:text-white"
+                  onClick={() => setSelectedFile(null)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
-          
-          {/* Text input and send button */}
-          <div className="flex gap-2">
-            {/* Text input area */}
-            <div className="relative flex-1">
-              <ChatVanishInput
-                placeholders={[
-                  "Expense 20,000, padel, Puro Padel today",
-                  "Add recurring subscription on 1st day of every month, 4,000, for netflix",
-                  "What % of my expenses last month was food/dining?",
-                  "What are expenses could I reduce to achieve our discussed goal by December?"
-                ]}
-                onChange={handleInputChange}
-                onSubmit={handleSubmit}
-                value={input}
-                disabled={isLoading}
-                textareaRef={textareaRef}
-                onKeyDown={handleKeyDown}
-              />
-            </div>
-            
-            {/* Send button */}
-            <Button 
-              type="submit" 
-              disabled={isLoading || (!input.trim() && !selectedFile)}
-              className="w-20 sm:w-24 h-12 bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              {isLoading ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              ) : (
-                <>
-                  <Send size={16} className="mr-2" />
-                  <span className="hidden sm:inline">Send</span>
-                </>
-              )}
-            </Button>
-          </div>
+
+          <Button
+            type="submit"
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "rounded-full transition-all duration-300",
+              (input.trim() || selectedFile)
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                : "bg-gray-800 hover:bg-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 text-white"
+            )}
+            disabled={isLoading || (!input.trim() && !selectedFile)}
+          >
+            <Send className="h-5 w-5" />
+          </Button>
         </form>
       </div>
-    </>
+
+      {/* Camera Overlay */}
+      {showCamera && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+          <div className="flex justify-between items-center p-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full bg-gray-800/50 text-white"
+              onClick={closeCamera}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+            <h2 className="text-white font-medium">Take a photo</h2>
+            <div className="w-10" />
+          </div>
+
+          <div className="flex-1 relative">
+            <video ref={videoRef} autoPlay playsInline className="absolute inset-0 w-full h-full object-cover" />
+          </div>
+
+          <div className="p-6 flex justify-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-16 w-16 rounded-full bg-white border-4 border-gray-800"
+              onClick={capturePhoto}
+            >
+              <div className="h-12 w-12 rounded-full bg-gray-800" />
+            </Button>
+          </div>
+
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+      )}
+    </div>
   );
 }
 
 function ChatSkeleton() {
   return (
-    <>
-      <div className="h-[65vh] sm:h-[70vh] overflow-y-auto mb-2 sm:mb-3 rounded-lg bg-background p-2">
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-start gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-[250px]" />
-              <Skeleton className="h-4 w-[200px]" />
-            </div>
-          </div>
-          <div className="flex items-start gap-3 justify-end">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-[200px]" />
-              <Skeleton className="h-4 w-[150px]" />
-            </div>
-            <Skeleton className="h-10 w-10 rounded-full" />
-          </div>
+    <div className="flex flex-col h-[calc(100vh-8rem)] overflow-hidden bg-gray-950 dark:bg-black rounded-xl shadow-xl border border-gray-800">
+      <div className="flex-1 p-4 space-y-4">
+        <div className="flex items-start space-x-2 mb-4">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <Skeleton className="h-20 w-2/3 rounded-lg" />
+        </div>
+        <div className="flex items-start justify-end space-x-2 mb-4">
+          <Skeleton className="h-16 w-2/3 rounded-lg" />
+          <Skeleton className="h-10 w-10 rounded-full" />
+        </div>
+        <div className="flex items-start space-x-2">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <Skeleton className="h-24 w-3/4 rounded-lg" />
         </div>
       </div>
-      
-      <div className="p-2 border-t">
-        <div className="flex flex-col gap-2">
-          {/* Media buttons skeleton */}
-          <div className="flex gap-2">
-            <Skeleton className="h-11 flex-1" />
-            <Skeleton className="h-11 flex-1" />
-          </div>
-          
-          {/* Text input and send button skeleton */}
-          <div className="flex gap-2">
-            <Skeleton className="h-12 flex-1" />
-            <Skeleton className="h-12 w-20 sm:w-24" />
-          </div>
+      <div className="p-4 bg-gray-900 dark:bg-gray-900 rounded-t-xl">
+        <div className="flex items-center space-x-2">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <Skeleton className="h-10 flex-1 rounded-full" />
+          <Skeleton className="h-10 w-10 rounded-full" />
         </div>
       </div>
-    </>
+    </div>
   );
 }

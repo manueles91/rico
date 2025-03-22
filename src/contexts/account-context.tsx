@@ -7,6 +7,13 @@ import { Account } from '@/db/schema';
 import Cookies from 'js-cookie';
 import { toast } from '@/components/ui/use-toast';
 
+// Types
+type ApiResponse<T> = {
+  success: boolean;
+  data?: T;
+  message?: string;
+};
+
 interface AccountContextType {
   accounts: Account[];
   currentAccount: Account | null;
@@ -19,6 +26,109 @@ interface AccountContextType {
   deleteAccount: (accountId: string) => Promise<boolean>;
 }
 
+// Custom error class for account-related errors
+class AccountError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AccountError';
+  }
+}
+
+// API service functions
+const accountApi = {
+  /**
+   * Fetches all accounts for a user
+   */
+  async fetchUserAccounts(userId: string): Promise<ApiResponse<Account[]>> {
+    const response = await fetch(`/api/accounts?userId=${userId}`, {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new AccountError(errorData.message || 'Failed to fetch accounts');
+    }
+    
+    return await response.json();
+  },
+
+  /**
+   * Checks if a user has any existing accounts
+   */
+  async checkExistingAccounts(userId: string): Promise<ApiResponse<Account[]>> {
+    const response = await fetch(`/api/accounts/check?userId=${userId}`, {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new AccountError(errorData.message || 'Failed to check for existing accounts');
+    }
+    
+    return await response.json();
+  },
+
+  /**
+   * Creates a new account
+   */
+  async createAccount(
+    data: { 
+      name: string; 
+      description: string; 
+      isPersonal?: boolean; 
+      generateShareableLink?: boolean;
+    }
+  ): Promise<ApiResponse<Account>> {
+    const response = await fetch('/api/accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new AccountError(errorData.message || 'Failed to create account');
+    }
+    
+    return await response.json();
+  },
+
+  /**
+   * Generates a shareable link for an account
+   */
+  async generateShareableLink(accountId: string): Promise<ApiResponse<{ shareLink: string }>> {
+    const response = await fetch(`/api/accounts/${accountId}/share`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new AccountError(errorData.message || 'Failed to generate shareable link');
+    }
+    
+    return await response.json();
+  },
+
+  /**
+   * Deletes an account (or removes user's access)
+   */
+  async deleteAccount(accountId: string): Promise<ApiResponse<void>> {
+    const response = await fetch(`/api/accounts/${accountId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new AccountError(errorData.message || 'Failed to delete account');
+    }
+    
+    return await response.json();
+  },
+};
+
+// Create context
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
 
 export function AccountProvider({ children }: { children: React.ReactNode }) {
@@ -29,7 +139,124 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   const router = useRouter();
 
-  // Function to fetch user accounts
+  /**
+   * Sets the current account and updates the cookie
+   */
+  const setActiveAccount = (account: Account) => {
+    setCurrentAccount(account);
+    Cookies.set('currentAccountId', account.id, { expires: 30 });
+  };
+
+  /**
+   * Handles API errors with consistent error messaging
+   */
+  const handleApiError = (err: unknown, action: string) => {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    setError(err instanceof Error ? err : new Error(errorMessage));
+    console.error(`Error ${action}:`, err);
+    
+    toast({
+      title: 'Error',
+      description: `Failed to ${action}: ${errorMessage}`,
+      variant: 'destructive',
+    });
+  };
+
+  /**
+   * Creates a personal account for the user
+   */
+  const createPersonalAccount = async (): Promise<Account | null> => {
+    if (!user) return null;
+
+    try {
+      toast({
+        title: 'Creating personal account',
+        description: 'No accounts found. Creating a personal account for you.',
+      });
+      
+      const createData = await accountApi.createAccount({
+        name: `${user.name || 'Personal'}'s Account`,
+        description: 'Your personal account',
+        isPersonal: true,
+      });
+      
+      if (createData.success && createData.data) {
+        const newAccount = createData.data;
+        setAccounts([newAccount]);
+        setActiveAccount(newAccount);
+        
+        toast({
+          title: 'Personal account created',
+          description: 'Your personal account has been created successfully.',
+        });
+        
+        return newAccount;
+      }
+    } catch (err) {
+      handleApiError(err, 'creating personal account');
+    }
+    
+    return null;
+  };
+
+  /**
+   * Checks for existing accounts and creates a personal one if none exist
+   */
+  const handleNoAccounts = async () => {
+    if (!stackUser || !user) return;
+    
+    try {
+      toast({
+        title: 'Checking for accounts',
+        description: 'Checking if you already have an account...',
+      });
+      
+      const checkData = await accountApi.checkExistingAccounts(user.id);
+      
+      if (checkData.success && checkData.data && checkData.data.length > 0) {
+        // User has existing accounts, use them
+        setAccounts(checkData.data);
+        setActiveAccount(checkData.data[0]);
+        
+        toast({
+          title: 'Account found',
+          description: 'Using your existing account.',
+        });
+        return;
+      }
+      
+      // No existing accounts found, create a personal one
+      await createPersonalAccount();
+    } catch (err) {
+      handleApiError(err, 'checking for existing accounts');
+    }
+  };
+
+  /**
+   * Handles account selection based on cookie or available accounts
+   */
+  const selectActiveAccount = (availableAccounts: Account[]) => {
+    if (availableAccounts.length === 0) return;
+    
+    const currentAccountId = Cookies.get('currentAccountId');
+    
+    if (currentAccountId) {
+      const account = availableAccounts.find(a => a.id === currentAccountId);
+      if (account) {
+        setActiveAccount(account);
+      } else {
+        // If the account in cookie doesn't exist, use the first account
+        setActiveAccount(availableAccounts[0]);
+      }
+    } else {
+      // If no cookie exists, use the first account
+      setActiveAccount(availableAccounts[0]);
+    }
+  };
+
+  /**
+   * Fetches user accounts
+   */
   const fetchAccounts = async () => {
     if (!user) {
       setAccounts([]);
@@ -39,175 +266,46 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Directly fetch the accounts without doing environment checks
-      const response = await fetch(`/api/accounts?userId=${user.id}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Accounts API response error:', errorData);
-        throw new Error(errorData.message || 'Failed to fetch accounts');
-      }
-      
-      const data = await response.json();
+      const data = await accountApi.fetchUserAccounts(user.id);
       
       if (data.success && data.data) {
         setAccounts(data.data);
         
-        // Get current account ID from cookie
-        const currentAccountId = Cookies.get('currentAccountId');
-        
-        // Find the current account in the list
-        if (currentAccountId) {
-          const account = data.data.find((a: Account) => a.id === currentAccountId);
-          if (account) {
-            setCurrentAccount(account);
-          } else if (data.data.length > 0) {
-            // If the account in the cookie doesn't exist, use the first account
-            setCurrentAccount(data.data[0]);
-            Cookies.set('currentAccountId', data.data[0].id, { expires: 30 });
-          }
-        } else if (data.data.length > 0) {
-          // If no cookie exists, use the first account
-          setCurrentAccount(data.data[0]);
-          Cookies.set('currentAccountId', data.data[0].id, { expires: 30 });
-        }
-      } else {
-        // If no accounts were returned, we might need to create a personal account
-        if (stackUser) {
-          toast({
-            title: 'Checking for accounts',
-            description: 'Checking if you already have an account...',
-          });
-          
-          // First check if the user already has a personal account
-          try {
-            const checkResponse = await fetch(`/api/accounts/check?userId=${user.id}`, {
-              headers: {
-                'Cache-Control': 'no-cache',
-              },
-            });
-            
-            if (checkResponse.ok) {
-              const checkData = await checkResponse.json();
-              
-              if (checkData.success && checkData.data && checkData.data.length > 0) {
-                // User has an existing account, use it
-                console.log('Found existing accounts:', checkData.data);
-                setAccounts(checkData.data);
-                setCurrentAccount(checkData.data[0]);
-                Cookies.set('currentAccountId', checkData.data[0].id, { expires: 30 });
-                
-                toast({
-                  title: 'Account found',
-                  description: 'Using your existing account.',
-                });
-                return;
-              }
-            }
-            
-            // If no existing account found, create a new personal account
-            toast({
-              title: 'Creating personal account',
-              description: 'No accounts found. Creating a personal account for you.',
-            });
-            
-            // Create a personal account for the user
-            try {
-              const createResponse = await fetch('/api/accounts', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  name: `${user.name || 'Personal'}'s Account`,
-                  description: 'Your personal account',
-                  isPersonal: true,
-                }),
-              });
-              
-              if (!createResponse.ok) {
-                const createErrorData = await createResponse.json();
-                console.error('Error creating personal account:', createErrorData);
-                throw new Error(createErrorData.message || 'Failed to create personal account');
-              }
-              
-              const createData = await createResponse.json();
-              console.log('Personal account created:', createData);
-              
-              if (createData.success && createData.data) {
-                setAccounts([createData.data]);
-                setCurrentAccount(createData.data);
-                Cookies.set('currentAccountId', createData.data.id, { expires: 30 });
-                
-                toast({
-                  title: 'Personal account created',
-                  description: 'Your personal account has been created successfully.',
-                });
-              }
-            } catch (createError) {
-              console.error('Error creating personal account:', createError);
-              toast({
-                title: 'Error',
-                description: `Failed to create personal account: ${(createError as Error).message}`,
-                variant: 'destructive',
-              });
-            }
-          } catch (checkError) {
-            console.error('Error checking for existing accounts:', checkError);
-            toast({
-              title: 'Error',
-              description: `Failed to check for existing accounts: ${(checkError as Error).message}`,
-              variant: 'destructive',
-            });
-          }
+        if (data.data.length > 0) {
+          selectActiveAccount(data.data);
+        } else {
+          // If no accounts were returned, check for existing or create a personal account
+          await handleNoAccounts();
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      console.error('Error fetching accounts:', err);
-      
-      toast({
-        title: 'Error',
-        description: `Failed to fetch accounts: ${(err as Error).message}`,
-        variant: 'destructive',
-      });
+      handleApiError(err, 'fetching accounts');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to create a new account
-  const createAccount = async (name: string, description: string, isPersonal: boolean = true, invitedEmails: string[] = []) => {
+  /**
+   * Creates a new account
+   */
+  const createAccount = async (
+    name: string, 
+    description: string, 
+    isPersonal: boolean = true, 
+    invitedEmails: string[] = []
+  ): Promise<Account | null> => {
     try {
-      const response = await fetch('/api/accounts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          description,
-          isPersonal,
-          generateShareableLink: !isPersonal,
-        }),
+      const data = await accountApi.createAccount({
+        name,
+        description,
+        isPersonal,
+        generateShareableLink: !isPersonal,
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error creating account:', errorData);
-        throw new Error(errorData.message || 'Failed to create account');
-      }
-      
-      const data = await response.json();
-      
       if (data.success && data.data) {
-        setAccounts([...accounts, data.data]);
-        setCurrentAccount(data.data);
-        Cookies.set('currentAccountId', data.data.id, { expires: 30 });
+        const newAccount = data.data;
+        setAccounts(prevAccounts => [...prevAccounts, newAccount]);
+        setActiveAccount(newAccount);
         
         toast({
           title: 'Account created',
@@ -216,83 +314,48 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
             : 'Your shared account has been created successfully. You can now share the invitation link with others.',
         });
         
-        return data.data;
+        return newAccount;
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      console.error('Error creating account:', err);
-      
-      toast({
-        title: 'Error',
-        description: `Failed to create account: ${(err as Error).message}`,
-        variant: 'destructive',
-      });
+      handleApiError(err, 'creating account');
     }
     
     return null;
   };
 
-  // Function to generate a shareable link for an account
-  const generateShareableLink = async (accountId: string) => {
+  /**
+   * Generates a shareable link for an account
+   */
+  const generateShareableLink = async (accountId: string): Promise<string | null> => {
     try {
-      const response = await fetch(`/api/accounts/${accountId}/share`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error generating shareable link:', errorData);
-        throw new Error(errorData.message || 'Failed to generate shareable link');
-      }
-      
-      const data = await response.json();
+      const data = await accountApi.generateShareableLink(accountId);
       
       if (data.success && data.data?.shareLink) {
         return data.data.shareLink;
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      console.error('Error generating shareable link:', err);
-      
-      toast({
-        title: 'Error',
-        description: `Failed to generate shareable link: ${(err as Error).message}`,
-        variant: 'destructive',
-      });
+      handleApiError(err, 'generating shareable link');
     }
     
     return null;
   };
 
-  // Function to delete an account (remove user's access)
-  const deleteAccount = async (accountId: string) => {
+  /**
+   * Deletes an account (or removes user's access)
+   */
+  const deleteAccount = async (accountId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/accounts/${accountId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      await accountApi.deleteAccount(accountId);
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error deleting account:', errorData);
-        throw new Error(errorData.message || 'Failed to delete account');
-      }
-      
-      // Remove the account from the local state
-      setAccounts(accounts.filter(account => account.id !== accountId));
+      // Update local state
+      setAccounts(prevAccounts => prevAccounts.filter(account => account.id !== accountId));
       
       // If the deleted account is the current account, switch to another account
       if (currentAccount?.id === accountId) {
         const remainingAccount = accounts.find(account => account.id !== accountId);
         
         if (remainingAccount) {
-          setCurrentAccount(remainingAccount);
-          Cookies.set('currentAccountId', remainingAccount.id, { expires: 30 });
+          setActiveAccount(remainingAccount);
         } else {
           setCurrentAccount(null);
           Cookies.remove('currentAccountId');
@@ -306,16 +369,22 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      console.error('Error deleting account:', err);
-      
-      toast({
-        title: 'Error',
-        description: `Failed to delete account: ${(err as Error).message}`,
-        variant: 'destructive',
-      });
-      
+      handleApiError(err, 'deleting account');
       return false;
+    }
+  };
+
+  /**
+   * Switches between accounts
+   */
+  const switchAccount = (accountId: string) => {
+    const account = accounts.find(a => a.id === accountId);
+    
+    if (account) {
+      setActiveAccount(account);
+      
+      // Refresh the page to update the context
+      router.refresh();
     }
   };
 
@@ -325,19 +394,6 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       fetchAccounts();
     }
   }, [user, isUserLoading]);
-
-  // Function to switch between accounts
-  const switchAccount = (accountId: string) => {
-    const account = accounts.find(a => a.id === accountId);
-    
-    if (account) {
-      setCurrentAccount(account);
-      Cookies.set('currentAccountId', accountId, { expires: 30 });
-      
-      // Refresh the page to update the context
-      router.refresh();
-    }
-  };
 
   return (
     <AccountContext.Provider

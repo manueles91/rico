@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { initializeDatabase } from '@/db';
+import { stackServerApp } from '@/stack';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,17 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   try {
+    // Authenticate user in production environments
+    if (process.env.NODE_ENV === 'production') {
+      const stackUser = await stackServerApp.getUser();
+      if (!stackUser) {
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Authentication required to initialize database in production' 
+        }, { status: 401 });
+      }
+    }
+    
     const result = await initializeDatabase();
     
     if (result.success) {
@@ -29,7 +41,7 @@ export async function GET() {
     return NextResponse.json({ 
       success: false, 
       message: 'Error initializing database',
-      error
+      error: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 }
